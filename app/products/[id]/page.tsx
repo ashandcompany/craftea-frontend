@@ -1,0 +1,468 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { products, reviews, favorites, type Product, type Review } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
+
+export default function ProductDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [productReviews, setProductReviews] = useState<Review[]>([]);
+  const [avgRating, setAvgRating] = useState<{ average: number; count: number } | null>(null);
+  const [isFav, setIsFav] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState(0);
+
+  // Review form
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState("");
+  const [editReviewLoading, setEditReviewLoading] = useState(false);
+  const [editReviewError, setEditReviewError] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [p, rev, avg] = await Promise.all([
+          products.get(Number(id)),
+          reviews.listByProduct(Number(id)).catch(() => ({ data: [] })),
+          reviews.average(Number(id)).catch(() => null),
+        ]);
+        setProduct(p);
+        setProductReviews(rev.data);
+        setAvgRating(avg);
+
+        if (user) {
+          const fav = await favorites.check(Number(id)).catch(() => ({ isFavorite: false }));
+          setIsFav(fav.isFavorite);
+        }
+      } catch (err: any) {
+        setError(err.message || "Produit introuvable");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id, user]);
+
+  const toggleFavorite = async () => {
+    if (!user) return;
+    try {
+      if (isFav) {
+        await favorites.remove(Number(id));
+      } else {
+        await favorites.add(Number(id));
+      }
+      setIsFav(!isFav);
+    } catch {}
+  };
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReviewError("");
+    setReviewLoading(true);
+    try {
+      const r = await reviews.create({ product_id: Number(id), rating, comment: comment || undefined });
+      setProductReviews((prev) => [r, ...prev]);
+      setComment("");
+      setRating(5);
+      setShowReviewForm(false);
+      const avg = await reviews.average(Number(id));
+      setAvgRating(avg);
+    } catch (err: any) {
+      setReviewError(err.message || "Erreur");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const openEditReview = (review: Review) => {
+    setEditingReviewId(review.id);
+    setEditRating(review.rating);
+    setEditComment(review.comment || "");
+    setEditReviewError("");
+  };
+
+  const cancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditReviewError("");
+  };
+
+  const submitEditReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReviewId) return;
+
+    setEditReviewError("");
+    setEditReviewLoading(true);
+    try {
+      const updated = await reviews.update(editingReviewId, {
+        rating: editRating,
+        comment: editComment || undefined,
+      });
+
+      setProductReviews((prev) => prev.map((rev) => (rev.id === updated.id ? updated : rev)));
+      setEditingReviewId(null);
+
+      const avg = await reviews.average(Number(id));
+      setAvgRating(avg);
+    } catch (err: any) {
+      setEditReviewError(err.message || "Erreur");
+    } finally {
+      setEditReviewLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
+        <div className="py-20 text-center text-stone-400">
+          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <p className="mt-2 text-sm">chargement du produit...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
+        <Alert variant="destructive" className="rounded-none border border-stone-300 bg-transparent font-mono">
+          <AlertDescription>{error || "Produit introuvable"}</AlertDescription>
+        </Alert>
+        <Link href="/products" className="mt-4 inline-block text-sm text-stone-500 hover:text-stone-800">
+          ← retour au catalogue
+        </Link>
+      </div>
+    );
+  }
+
+  const images = product.images || [];
+  const imageUrl = images[selectedImage]?.image_url;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
+      {/* Back link */}
+      <Link href="/products" className="mb-8 inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-800">
+        ← retour au catalogue
+      </Link>
+
+      {/* Product header */}
+      <div className="mb-8 border-b border-stone-200 pb-6">
+        <h1 className="text-3xl font-light tracking-tight text-stone-900">
+          {product.title || "sans titre"}
+        </h1>
+        <div className="mt-2 flex items-center gap-4 text-sm">
+          {product.category && (
+            <span className="text-stone-500">#{product.category.name}</span>
+          )}
+          <span className={`text-xs ${product.is_active ? 'text-stone-600' : 'text-stone-400'}`}>
+            {product.is_active ? '✓ disponible' : '○ indisponible'}
+          </span>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="grid gap-10 lg:grid-cols-2">
+        {/* Images */}
+        <div className="space-y-3">
+          <div className="aspect-square border border-stone-200 bg-stone-50">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={product.title || ""}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-stone-400">
+                <span className="text-sm">[image]</span>
+              </div>
+            )}
+          </div>
+          
+          {images.length > 1 && (
+            <div className="flex gap-2">
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  onClick={() => setSelectedImage(i)}
+                  className={`size-14 border transition-colors ${
+                    i === selectedImage 
+                      ? 'border-stone-800' 
+                      : 'border-stone-200 hover:border-stone-400'
+                  }`}
+                >
+                  <img src={img.image_url || ""} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="space-y-6">
+          {/* Price */}
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-stone-400">prix</p>
+            <p className="text-3xl text-stone-900">
+              {product.price != null ? `${Number(product.price).toFixed(2)} €` : "—"}
+            </p>
+          </div>
+
+          {/* Rating */}
+          {avgRating && avgRating.count > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wider text-stone-400">avis</p>
+              <div className="flex items-center gap-2">
+                <div className="flex text-stone-700">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className="text-sm">
+                      {i < Math.round(avgRating.average) ? '★' : '☆'}
+                    </span>
+                  ))}
+                </div>
+                <span className="text-xs text-stone-500">
+                  {avgRating.average.toFixed(1)} ({avgRating.count})
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          {product.description && (
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-stone-400">description</p>
+              <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+            </div>
+          )}
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-4 border-t border-stone-200 pt-4">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-stone-400">stock</p>
+              <p className="text-sm text-stone-700">{product.stock} unité{product.stock > 1 ? 's' : ''}</p>
+            </div>
+            {product.creation_time && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-stone-400">fabrication</p>
+                <p className="text-sm text-stone-700">{product.creation_time} jours</p>
+              </div>
+            )}
+            {product.delivery_time && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-stone-400">livraison</p>
+                <p className="text-sm text-stone-700">{product.delivery_time} jours</p>
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="border-t border-stone-200 pt-4">
+              <p className="text-xs uppercase tracking-wider text-stone-400 mb-2">tags</p>
+              <div className="flex flex-wrap gap-2">
+                {product.tags.map((tag) => (
+                  <span key={tag.id} className="text-xs text-stone-500">
+                    #{tag.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            {user && (
+              <button
+                onClick={toggleFavorite}
+                className={`border px-4 py-2 text-sm transition-colors ${
+                  isFav 
+                    ? 'border-stone-800 bg-stone-800 text-stone-50 hover:bg-stone-700' 
+                    : 'border-stone-200 hover:border-stone-800 hover:text-stone-800'
+                }`}
+              >
+                {isFav ? '★ favori' : '☆ ajouter aux favoris'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews section */}
+      <section className="mt-16 border-t border-stone-200 pt-10">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-light tracking-tight text-stone-900">Avis clients</h2>
+          {user && !showReviewForm && (
+            <button
+              onClick={() => setShowReviewForm(true)}
+              className="text-xs text-stone-500 hover:text-stone-800 border-b border-stone-200 hover:border-stone-800 pb-0.5"
+            >
+              + écrire un avis
+            </button>
+          )}
+        </div>
+
+        {/* Review form */}
+        {user && showReviewForm && (
+          <div className="mb-8 border border-stone-200 bg-stone-50 p-5">
+            <form onSubmit={submitReview} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wider text-stone-400">nouvel avis</p>
+                <button 
+                  type="button"
+                  onClick={() => setShowReviewForm(false)}
+                  className="text-xs text-stone-400 hover:text-stone-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {reviewError && (
+                <Alert variant="destructive" className="rounded-none border border-stone-300 bg-transparent">
+                  <AlertDescription>{reviewError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs text-stone-500">note</label>
+                <div className="flex gap-1 text-lg">
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRating(r)}
+                      className={`text-2xl ${r <= rating ? 'text-stone-800' : 'text-stone-300'}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-stone-500">commentaire</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="votre avis (minimum 10 caractères)..."
+                  rows={3}
+                  className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 outline-none focus:border-stone-600"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={reviewLoading}
+                className="border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+              >
+                {reviewLoading ? 'envoi...' : 'publier l\'avis'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Reviews list */}
+        <div className="space-y-4">
+          {productReviews.length === 0 ? (
+            <p className="text-sm text-stone-400 italic">— aucun avis pour ce produit —</p>
+          ) : (
+            productReviews.map((rev) => (
+              <div key={rev.id} className="border border-stone-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex text-stone-600">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className="text-sm">
+                          {i < rev.rating ? '★' : '☆'}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs text-stone-400">
+                      {new Date(rev.created_at).toLocaleDateString("fr-FR")}
+                    </span>
+                    <span className="text-stone-300">|</span>
+                    <span className="text-xs text-stone-500">
+                      {user && rev.user_id === user.id ? "vous" : rev.reviewer_name || `utilisateur #${rev.user_id}`}
+                    </span>
+                  </div>
+                  {user && rev.user_id === user.id && editingReviewId !== rev.id && (
+                    <button
+                      onClick={() => openEditReview(rev)}
+                      className="text-xs text-stone-400 hover:text-stone-700"
+                    >
+                      modifier
+                    </button>
+                  )}
+                </div>
+
+                {editingReviewId === rev.id ? (
+                  <form onSubmit={submitEditReview} className="mt-3 space-y-3 border-t border-stone-200 pt-3">
+                    {editReviewError && (
+                      <Alert variant="destructive" className="rounded-none border border-stone-300 bg-transparent">
+                        <AlertDescription>{editReviewError}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-stone-500">note</label>
+                      <div className="flex gap-1 text-lg">
+                        {[1, 2, 3, 4, 5].map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setEditRating(r)}
+                            className={`text-2xl ${r <= editRating ? 'text-stone-800' : 'text-stone-300'}`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-stone-500">commentaire</label>
+                      <textarea
+                        value={editComment}
+                        onChange={(e) => setEditComment(e.target.value)}
+                        rows={3}
+                        className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={editReviewLoading}
+                        className="border border-stone-800 bg-stone-800 px-3 py-1.5 text-xs text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+                      >
+                        {editReviewLoading ? "enregistrement..." : "sauvegarder"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditReview}
+                        className="border border-stone-200 px-3 py-1.5 text-xs text-stone-600 hover:text-stone-800"
+                      >
+                        annuler
+                      </button>
+                    </div>
+                  </form>
+                ) : rev.comment ? (
+                  <p className="mt-2 text-sm text-stone-600">{rev.comment}</p>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}

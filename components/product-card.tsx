@@ -1,0 +1,96 @@
+"use client";
+
+import Link from "next/link";
+import type { Product } from "@/lib/api";
+
+type ProductCardProps = {
+  product: Product;
+  onToggleFavorite?: (id: number) => void;
+  isFavorite?: boolean;
+};
+
+export function ProductCard({ product, onToggleFavorite, isFavorite }: ProductCardProps) {
+  const imageUrl = product.images?.[0]?.image_url;
+
+  return (
+    <div className="group border border-stone-200 bg-paper-50 p-4 font-mono">
+      {/* Image */}
+      <Link href={`/products/${product.id}`} className="block">
+        <div className="relative mb-4 aspect-square border border-stone-200 bg-stone-100">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.title || "Produit"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-stone-400">
+              <span className="text-xs">[image]</span>
+            </div>
+          )}
+          {!product.is_active && (
+            <div className="absolute inset-0 border-2 border-stone-600 bg-stone-50/90">
+              <div className="flex h-full items-center justify-center">
+                <span className="text-xs uppercase tracking-wider text-stone-600">
+                  indisponible
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* Content */}
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <Link href={`/products/${product.id}`} className="block">
+              <h3 className="truncate text-sm text-stone-800 hover:underline">
+                {product.title || "sans titre"}
+              </h3>
+            </Link>
+            {product.category && (
+              <p className="mt-0.5 text-xs text-stone-400">{product.category.name}</p>
+            )}
+          </div>
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onToggleFavorite(product.id);
+              }}
+              className="shrink-0 p-1"
+            >
+              <span className="text-xs text-stone-400">
+                {isFavorite ? "★" : "☆"}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px w-full bg-stone-200" />
+
+        {/* Price & Stock */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-stone-800">
+            {product.price != null ? `${Number(product.price).toFixed(2)} €` : "—"}
+          </span>
+          <span className={product.stock > 0 ? "text-stone-600" : "text-stone-400"}>
+            {product.stock > 0 ? "en stock" : "rupture"}
+          </span>
+        </div>
+
+        {/* Tags */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 border-t border-stone-200 pt-2 text-[10px] uppercase tracking-wider text-stone-400">
+            {product.tags.slice(0, 3).map((tag) => (
+              <span key={tag.id}>#{tag.name}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
