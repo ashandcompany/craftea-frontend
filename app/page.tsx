@@ -28,7 +28,7 @@ export default function HomePage() {
   const [displayText, setDisplayText] = useState("");
   const [showCursor, setShowCursor] = useState(true);
   const fullText = "L'artisanat authentique";
-  
+
   useEffect(() => {
     let i = 0;
     const timer = setInterval(() => {
@@ -39,11 +39,11 @@ export default function HomePage() {
         clearInterval(timer);
       }
     }, 100);
-    
+
     const cursorTimer = setInterval(() => {
       setShowCursor(prev => !prev);
     }, 500);
-    
+
     return () => {
       clearInterval(timer);
       clearInterval(cursorTimer);
@@ -126,7 +126,7 @@ export default function HomePage() {
                 <br />
               </h2>
               <div className="h-px w-16 sm:w-24 bg-sage-300" />
-              <p className="max-w-xl font-mono text-sm sm:text-base leading-relaxed text-stone-600">
+              <p className="max-w-xl font-mono text-sm sm:text-base leading-relaxed text-stone-700">
                 Des créations uniques, faites main.
                 <br />
                 Bijoux, céramique, textile.
@@ -134,12 +134,12 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
               <Link href="/products" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border border-sage-700 bg-sage-700 px-6 py-2 font-mono text-sm text-white hover:bg-sage-800 transition-colors">
+                <Button className="w-full sm:w-auto rounded-none border border-sage-800 bg-sage-800 px-6 py-2 font-mono text-sm text-white hover:bg-sage-900 transition-colors">
                   explorer →
                 </Button>
               </Link>
               <Link href="/artists" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border border-sage-300 bg-transparent px-6 py-2 font-mono text-sm text-sage-700 hover:border-sage-700 hover:text-sage-800">
+                <Button className="w-full sm:w-auto rounded-none border border-sage-600 bg-transparent px-6 py-2 font-mono text-sm text-sage-800 hover:border-sage-800 hover:text-sage-900">
                   artisans
                 </Button>
               </Link>
@@ -147,9 +147,9 @@ export default function HomePage() {
           </div>
 
           <div className="relative overflow-hidden flex-1">
-            <img 
-              src={"/hihi.webp"} 
-              className="w-full h-auto max-h-100 object-cover rounded-sm border-2 border-sage-200" 
+            <img
+              src={"/hihi.webp"}
+              className="w-full h-auto max-h-100 object-cover border-2 border-sage-200"
               alt="Artisanat authentique"
             />
             <div className="absolute inset-0 border-2 border-sage-500/20 pointer-events-none rounded-sm"></div>
@@ -199,7 +199,7 @@ export default function HomePage() {
                     <div className="space-y-2 sm:space-y-3">
                       <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-100 rounded-full flex items-center justify-center text-sage-700">
                         {IconComponent ? (
-                          <IconComponent className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <IconComponent strokeWidth={1} className="w-5 h-5 sm:w-6 sm:h-6" />
                         ) : (
                           <span className="text-xl sm:text-2xl">✨</span>
                         )}
@@ -208,7 +208,7 @@ export default function HomePage() {
                         {cat.name}
                       </h4>
                       {cat.description && (
-                        <p className="font-mono text-xs text-stone-500 line-clamp-2">
+                        <p className="font-mono text-xs text-stone-600 line-clamp-2">
                           {cat.description}
                         </p>
                       )}
@@ -292,22 +292,22 @@ export default function HomePage() {
           {/* Éléments décoratifs */}
           <div className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-sage-200/20 rounded-full -translate-x-12 sm:-translate-x-16 -translate-y-12 sm:-translate-y-16"></div>
           <div className="absolute bottom-0 right-0 w-36 sm:w-48 h-36 sm:h-48 bg-sage-200/20 rounded-full translate-x-16 sm:translate-x-24 translate-y-16 sm:translate-y-24"></div>
-          
+
           <div className="relative space-y-4 sm:space-y-6">
             <div className="flex justify-center gap-2 text-sage-600">
               <span className="text-xl sm:text-2xl]">✦</span>
               <span className="font-mono mt-2 text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em]">appel aux artisans</span>
               <span className="text-xl sm:text-2xl">✦</span>
             </div>
-            
+
             <h4 className="font-mono text-2xl sm:text-3xl text-stone-800">
               Vous êtes <span className="text-sage-700 italic">artisan</span> ?
             </h4>
-            
+
             <p className="mx-auto max-w-md font-mono text-xs sm:text-sm text-stone-600 px-4">
               Rejoignez notre communauté et partagez vos créations uniques avec des milliers de passionnés.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-4 px-4">
               <Link href="/register" className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto rounded-none border-2 border-sage-700 bg-sage-700 px-6 sm:px-10 py-3 sm:py-4 font-mono text-sm text-white hover:bg-sage-800 transition-all hover:scale-105">
@@ -320,7 +320,7 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            
+
             {/* Témoignage minimal */}
             <p className="text-xs text-sage-500 italic mt-6 sm:mt-8">
               "Déjà plus de 50 artisans nous ont rejoints"
