@@ -6,6 +6,7 @@ import Link from "next/link";
 import { artists as artistsApi, products as productsApi, type ArtistProfile, type Product } from "@/lib/api";
 import { ProductCard } from "@/components/product-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { assetUrl } from "@/lib/utils";
 
 export default function ArtistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -107,7 +108,7 @@ export default function ArtistDetailPage() {
       {/* Artist Banner */}
       <div className="mb-6 border border-stone-200 bg-stone-100 h-48 sm:h-56">
         {artist.banner_url ? (
-          <img src={artist.banner_url} alt={`Bannière artiste #${artist.id}`} className="h-full w-full object-cover" />
+          <img src={assetUrl(artist.banner_url, "artist-images")} alt={`Bannière artiste #${artist.id}`} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-stone-400">
             <span className="text-sm">[bannière artiste]</span>
@@ -121,7 +122,7 @@ export default function ArtistDetailPage() {
           {/* Artist Avatar */}
           <div className="flex h-20 w-20 items-center justify-center border border-stone-300 bg-stone-50 text-lg uppercase text-stone-500">
             {artist.logo_url ? (
-              <img src={artist.logo_url} alt={`Artiste ${artist.id}`} className="h-full w-full object-cover" />
+              <img src={assetUrl(artist.logo_url, "artist-images")} alt={`Artiste ${artist.id}`} className="h-full w-full object-cover" />
             ) : (
               <span>A{artist.id}</span>
             )}
@@ -203,7 +204,7 @@ export default function ArtistDetailPage() {
                 {/* Shop Logo - smaller */}
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-stone-300 bg-stone-50 text-xs uppercase text-stone-500">
                   {currentShop.logo_url ? (
-                    <img src={currentShop.logo_url} alt={currentShop.name} className="h-full w-full object-cover" />
+                    <img src={assetUrl(currentShop.logo_url, "artist-images")} alt={currentShop.name} className="h-full w-full object-cover" />
                   ) : (
                     <span>S{currentShop.id}</span>
                   )}
@@ -234,7 +235,7 @@ export default function ArtistDetailPage() {
               {/* Shop Banner - small preview (optional) */}
               {currentShop.banner_url && (
                 <div className="mt-3 h-16 border border-stone-200 bg-stone-100 overflow-hidden">
-                  <img src={currentShop.banner_url} alt="" className="h-full w-full object-cover" />
+                  <img src={assetUrl(currentShop.banner_url, "artist-images")} alt="" className="h-full w-full object-cover" />
                 </div>
               )}
             </div>

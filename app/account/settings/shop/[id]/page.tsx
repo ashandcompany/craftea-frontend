@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
     Loader, Check, ImageIcon, Store, ArrowLeft, Trash2, Box,
 } from "lucide-react";
+import { assetUrl } from "@/lib/utils";
 
 export default function ShopDetailPage() {
     const { user } = useAuth();
@@ -240,7 +241,7 @@ export default function ShopDetailPage() {
                                         />
                                     ) : shop.banner_url ? (
                                         <img
-                                            src={shop.banner_url}
+                                            src={assetUrl(shop.banner_url, "artist-images")}
                                             alt="bannière"
                                             className="h-full w-full object-cover"
                                         />
@@ -273,7 +274,7 @@ export default function ShopDetailPage() {
                                         />
                                     ) : shop.logo_url ? (
                                         <img
-                                            src={shop.logo_url}
+                                            src={assetUrl(shop.logo_url, "artist-images")}
                                             alt="logo"
                                             className="h-full w-full object-cover"
                                         />

@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader, Check, ImageIcon, Palette } from "lucide-react";
+import { assetUrl } from "@/lib/utils";
 
 type SocialLinks = {
     instagram?: string;
@@ -221,7 +222,7 @@ export default function ArtistSettingsPage() {
                                         />
                                     ) : artistProfile?.banner_url ? (
                                         <img
-                                            src={artistProfile.banner_url}
+                                            src={assetUrl(artistProfile.banner_url, "artist-images")}
                                             alt="bannière actuelle"
                                             className="h-full w-full object-cover"
                                         />
@@ -254,7 +255,7 @@ export default function ArtistSettingsPage() {
                                         />
                                     ) : artistProfile?.logo_url ? (
                                         <img
-                                            src={artistProfile.logo_url}
+                                            src={assetUrl(artistProfile.logo_url, "artist-images")}
                                             alt="logo actuel"
                                             className="h-full w-full object-cover"
                                         />

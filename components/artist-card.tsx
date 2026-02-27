@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ArtistProfile } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 
 export function ArtistCard({ artist }: { artist: ArtistProfile }) {
   const initial = artist.id ? String(artist.id).charAt(0) : "?";
@@ -13,14 +14,14 @@ export function ArtistCard({ artist }: { artist: ArtistProfile }) {
         {/* Banner */}
         <div className="h-16 border border-stone-200 bg-stone-100">
           {artist.banner_url && (
-            <img src={artist.banner_url} alt="" className="h-full w-full object-cover" />
+            <img src={assetUrl(artist.banner_url, "artist-images")} alt="" className="h-full w-full object-cover" />
           )}
         </div>
         
         {/* Avatar */}
         <div className="absolute -bottom-6 left-2 flex h-12 w-12 items-center justify-center border border-stone-300 bg-paper-50 text-xs uppercase text-stone-500">
           {artist.logo_url ? (
-            <img src={artist.logo_url} alt={`Artist ${artist.id}`} className="h-full w-full object-cover" />
+            <img src={assetUrl(artist.logo_url, "artist-images")} alt={`Artist ${artist.id}`} className="h-full w-full object-cover" />
           ) : (
             <span>A{initial}</span>
           )}

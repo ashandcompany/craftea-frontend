@@ -193,18 +193,19 @@ export default function HomePage() {
                     href={`/products?category_id=${cat.id}`}
                     className="group relative bg-white border border-sage-200 p-4 sm:p-6 transition-all hover:border-sage-400 hover:shadow-lg hover:-translate-y-1"
                   >
-                    <div className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sage-100 rounded-full flex items-center justify-center text-sage-700 text-xs font-bold">
+                    <div className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sage-200 rounded-full flex items-center justify-center text-sage-800 text-xs font-bold">
                       {index + 1}
                     </div>
                     <div className="space-y-2 sm:space-y-3">
-                      <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-100 rounded-full flex items-center justify-center text-sage-700">
+                      // Icônes de catégorie
+                      <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-200 rounded-full flex items-center justify-center text-sage-800">
                         {IconComponent ? (
-                          <IconComponent strokeWidth={1} className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <IconComponent strokeWidth={1.5} className="w-5 h-5 sm:w-6 sm:h-6" />
                         ) : (
                           <span className="text-xl sm:text-2xl">✨</span>
                         )}
                       </div>
-                      <h4 className="font-mono text-xs sm:text-sm font-medium text-stone-800 group-hover:text-sage-700">
+                      <h4 className="font-mono text-xs sm:text-sm font-medium text-stone-900 group-hover:text-sage-800">
                         {cat.name}
                       </h4>
                       {cat.description && (

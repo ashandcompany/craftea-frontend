@@ -6,6 +6,7 @@ import { products, reviews, favorites, type Product, type Review } from "@/lib/a
 import { useAuth } from "@/lib/auth-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { assetUrl } from "@/lib/utils";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -178,7 +179,7 @@ export default function ProductDetailPage() {
           <div className="aspect-square border border-stone-200 bg-stone-50">
             {imageUrl ? (
               <img
-                src={imageUrl}
+                src={assetUrl(imageUrl, "product-images")}
                 alt={product.title || ""}
                 className="h-full w-full object-cover"
               />
@@ -201,7 +202,7 @@ export default function ProductDetailPage() {
                       : 'border-stone-200 hover:border-stone-400'
                   }`}
                 >
-                  <img src={img.image_url || ""} alt="" className="h-full w-full object-cover" />
+                  <img src={assetUrl(img.image_url || "", "product-images")} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>

@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader, Plus, Store, ArrowRight, ImageIcon, Check } from "lucide-react";
+import { assetUrl } from "@/lib/utils";
 
 export default function ShopListPage() {
     const { user } = useAuth();
@@ -152,7 +153,7 @@ export default function ShopListPage() {
                                     <div className="flex items-center gap-4">
                                         {shop.logo_url ? (
                                             <img
-                                                src={shop.logo_url}
+                                                src={assetUrl(shop.logo_url, "artist-images")}
                                                 alt={shop.name || ""}
                                                 className="h-12 w-12 border border-stone-200 object-cover shrink-0"
                                             />

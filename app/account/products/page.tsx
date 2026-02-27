@@ -18,6 +18,7 @@ import {
   ApiError,
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { assetUrl } from "@/lib/utils";
 
 type ProductFormData = {
   shop_id: number;
@@ -530,7 +531,7 @@ export default function AccountProductsPage() {
                   <div className="flex items-center gap-3">
                     {product.images?.[0]?.image_url ? (
                       <img
-                        src={product.images[0].image_url}
+                        src={assetUrl(product.images[0].image_url, "product-images")}
                         alt=""
                         className="h-10 w-10 shrink-0 border border-stone-200 object-cover"
                       />
@@ -629,7 +630,7 @@ export default function AccountProductsPage() {
                 <div className="flex items-start gap-3">
                   {product.images?.[0]?.image_url ? (
                     <img
-                      src={product.images[0].image_url}
+                      src={assetUrl(product.images[0].image_url, "product-images")}
                       alt=""
                       className="h-14 w-14 shrink-0 border border-stone-200 object-cover"
                     />
@@ -892,7 +893,7 @@ export default function AccountProductsPage() {
 
                           {/* Thumbnail */}
                           <img
-                            src={img.image_url}
+                            src={assetUrl(img.image_url, "product-images")}
                             alt=""
                             className="h-16 w-16 shrink-0 object-cover border border-stone-100"
                           />

@@ -19,8 +19,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      const { user } = await authApi.me();
-      setUser(user);
+      const currentUser = await authApi.me();
+      setUser(currentUser);
     } catch {
       setUser(null);
       removeToken();

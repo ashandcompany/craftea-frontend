@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Product } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 
 type ProductCardProps = {
   product: Product;
@@ -19,7 +20,7 @@ export function ProductCard({ product, onToggleFavorite, isFavorite }: ProductCa
         <div className="relative mb-4 aspect-square border border-stone-200 bg-stone-100">
           {imageUrl ? (
             <img
-              src={imageUrl}
+              src={assetUrl(imageUrl, "product-images")}
               alt={product.title || "Produit"}
               className="h-full w-full object-cover"
             />

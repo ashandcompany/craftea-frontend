@@ -16,6 +16,7 @@ import {
   Heart, Box, Star, Store, TrendingUp,
   ArrowRight, Package, Settings, MessageSquare, ShoppingBag
 } from "lucide-react";
+import { assetUrl } from "@/lib/utils";
 
 export default function AccountDashboard() {
   const { user } = useAuth();
@@ -233,7 +234,7 @@ export default function AccountDashboard() {
                     <div className="flex items-center gap-4">
                       {shop.logo_url ? (
                         <img
-                          src={shop.logo_url}
+                          src={assetUrl(shop.logo_url, "artist-images")}
                           alt={shop.name || ""}
                           className="h-10 w-10 border border-stone-200 object-cover"
                         />
