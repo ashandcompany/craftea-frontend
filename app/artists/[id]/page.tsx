@@ -7,6 +7,7 @@ import { artists as artistsApi, products as productsApi, type ArtistProfile, typ
 import { ProductCard } from "@/components/product-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assetUrl } from "@/lib/utils";
+import { Pin } from 'lucide-react';
 
 export default function ArtistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -225,7 +226,7 @@ export default function ArtistDetailPage() {
                   <div className="mt-1 flex items-center gap-3 text-xs">
                     {currentShop.location && (
                       <span className="flex items-center gap-1 text-stone-400">
-                        <span>📍</span> {currentShop.location}
+                        <Pin width={12} strokeWidth={1.5} /> {currentShop.location}
                       </span>
                     )}
                   </div>
