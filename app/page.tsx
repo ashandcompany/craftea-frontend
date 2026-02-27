@@ -180,7 +180,7 @@ export default function HomePage() {
               <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700">
                 catégories
               </h3>
-              <Link href="/categories" className="font-mono text-xs text-sage-500 hover:text-sage-700 transition-colors">
+              <Link href="/categories" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors">
                 tout voir →
               </Link>
             </div>
@@ -197,7 +197,6 @@ export default function HomePage() {
                       {index + 1}
                     </div>
                     <div className="space-y-2 sm:space-y-3">
-                      // Icônes de catégorie
                       <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-200 rounded-full flex items-center justify-center text-sage-800">
                         {IconComponent ? (
                           <IconComponent strokeWidth={1.5} className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -213,7 +212,7 @@ export default function HomePage() {
                           {cat.description}
                         </p>
                       )}
-                      <span className="inline-block text-xs text-sage-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="inline-block text-xs text-sage-800 opacity-0 group-hover:opacity-100 transition-opacity">
                         découvrir →
                       </span>
                     </div>
@@ -230,7 +229,7 @@ export default function HomePage() {
             <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700">
               dernières créations
             </h3>
-            <Link href="/products" className="font-mono text-xs text-sage-500 hover:text-sage-700 transition-colors">
+            <Link href="/products" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors">
               tout voir →
             </Link>
           </div>
@@ -295,7 +294,7 @@ export default function HomePage() {
           <div className="absolute bottom-0 right-0 w-36 sm:w-48 h-36 sm:h-48 bg-sage-200/20 rounded-full translate-x-16 sm:translate-x-24 translate-y-16 sm:translate-y-24"></div>
 
           <div className="relative space-y-4 sm:space-y-6">
-            <div className="flex justify-center gap-2 text-sage-600">
+            <div className="flex justify-center gap-2 text-sage-700">
               <span className="text-xl sm:text-2xl]">✦</span>
               <span className="font-mono mt-2 text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em]">appel aux artisans</span>
               <span className="text-xl sm:text-2xl">✦</span>
@@ -305,7 +304,7 @@ export default function HomePage() {
               Vous êtes <span className="text-sage-700 italic">artisan</span> ?
             </h4>
 
-            <p className="mx-auto max-w-md font-mono text-xs sm:text-sm text-stone-600 px-4">
+            <p className="mx-auto max-w-md font-mono text-xs sm:text-sm text-stone-700 px-4">
               Rejoignez notre communauté et partagez vos créations uniques avec des milliers de passionnés.
             </p>
 
@@ -323,7 +322,7 @@ export default function HomePage() {
             </div>
 
             {/* Témoignage minimal */}
-            <p className="text-xs text-sage-500 italic mt-6 sm:mt-8">
+            <p className="text-xs text-sage-700 italic mt-6 sm:mt-8">
               "Déjà plus de 50 artisans nous ont rejoints"
             </p>
           </div>
