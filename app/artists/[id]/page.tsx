@@ -93,7 +93,7 @@ export default function ArtistDetailPage() {
   let socialLinks: Record<string, string> = {};
   try {
     if (artist.social_links) socialLinks = JSON.parse(artist.social_links);
-  } catch {}
+  } catch { }
 
   const currentShop = artist.shops?.find(s => s.id === selectedShop);
 
@@ -130,7 +130,7 @@ export default function ArtistDetailPage() {
           {/* Artist Info */}
           <div className="flex-1">
             <h1 className="text-2xl font-light tracking-tight text-stone-900">
-              Artiste #{artist.id}
+              {artist.user ? artist.user?.firstname + " " + artist.user?.lastname : "Artiste #" + artist.id}
             </h1>
             <div className="mt-1 flex items-center gap-3 text-xs">
               <span className={artist.validated ? "text-stone-600" : "text-stone-400"}>
@@ -177,7 +177,7 @@ export default function ArtistDetailPage() {
           <h2 className="mb-4 text-lg font-light tracking-tight text-stone-900">
             Boutiques
           </h2>
-          
+
           {/* Shop selector - tabs style */}
           {artist.shops.length > 1 && (
             <div className="mb-6 flex gap-4 border-b border-stone-200">
@@ -185,11 +185,10 @@ export default function ArtistDetailPage() {
                 <button
                   key={shop.id}
                   onClick={() => setSelectedShop(shop.id)}
-                  className={`text-xs py-2 px-1 transition-colors border-b-2 ${
-                    selectedShop === shop.id
+                  className={`text-xs py-2 px-1 transition-colors border-b-2 ${selectedShop === shop.id
                       ? 'border-stone-800 text-stone-800'
                       : 'border-transparent text-stone-400 hover:text-stone-600'
-                  }`}
+                    }`}
                 >
                   {shop.name || `Boutique #${shop.id}`}
                 </button>
@@ -217,11 +216,11 @@ export default function ArtistDetailPage() {
                       {currentShop.name || `Boutique #${currentShop.id}`}
                     </h3>
                   </div>
-                  
+
                   {currentShop.description && (
                     <p className="mt-0.5 text-xs text-stone-500 line-clamp-1">{currentShop.description}</p>
                   )}
-                  
+
                   <div className="mt-1 flex items-center gap-3 text-xs">
                     {currentShop.location && (
                       <span className="flex items-center gap-1 text-stone-400">
