@@ -3,8 +3,8 @@ const API_URLS = {
   artist: process.env.NEXT_PUBLIC_ARTIST_API || "http://localhost:3002",
   catalog: process.env.NEXT_PUBLIC_CATALOG_API || "http://localhost:3003",
   interaction: process.env.NEXT_PUBLIC_INTERACTION_API || "http://localhost:3004",
-  order: process.env.NEXT_PUBLIC_ORDER_API || "https://localhost:3005",
-  cart: process.env.NEXT_PUBLIC_CART_API || "https://localhost:3006",
+  order: process.env.NEXT_PUBLIC_ORDER_API || "http://localhost:3005",
+  cart: process.env.NEXT_PUBLIC_CART_API || "http://localhost:3006",
 };
 
 function getToken(): string | null {
@@ -365,4 +365,76 @@ export const reviews = {
     request<Review>("interaction", `/api/reviews/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (id: number) =>
     request<void>("interaction", `/api/reviews/${id}`, { method: "DELETE" }),
+};
+
+// ─── Orders ─────────────────────────────────────────────────────────────
+
+export enum OrderStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  PREPARING = 'preparing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: number;
+  user_id: number;
+  status: OrderStatus;
+  total: number;
+  items: OrderItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export const orders = {
+  create: (items: { product_id: number; quantity: number; price: number }[]) =>
+    request<Order>("order", "/api/orders", { method: "POST", body: JSON.stringify({ items }) }),
+  my: () =>
+    request<Order[]>("order", "/api/orders/my"),
+  list: () =>
+    request<Order[]>("order", "/api/orders/"),
+  get: (id: number) =>
+    request<Order>("order", `/api/orders/${id}`),
+  updateStatus: (id: number, status: OrderStatus) =>
+    request<Order>("order", `/api/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+};
+
+// ─── Cart ───────────────────────────────────────────────────────────────
+
+export interface CartItem {
+  id: number;
+  cart_id: number;
+  product_id: number;
+  quantity: number;
+}
+
+export interface Cart {
+  id: number;
+  user_id: number;
+  items: CartItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export const cart = {
+  get: () =>
+    request<Cart>("cart", "/api/cart"),
+  addItem: (product_id: number, quantity: number = 1) =>
+    request<Cart>("cart", "/api/cart/items", { method: "POST", body: JSON.stringify({ product_id, quantity }) }),
+  updateItem: (itemId: number, quantity: number) =>
+    request<Cart>("cart", `/api/cart/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantity }) }),
+  removeItem: (itemId: number) =>
+    request<Cart>("cart", `/api/cart/items/${itemId}`, { method: "DELETE" }),
+  clear: () =>
+    request<Cart>("cart", "/api/cart", { method: "DELETE" }),
 };
