@@ -3,6 +3,8 @@ const API_URLS = {
   artist: process.env.NEXT_PUBLIC_ARTIST_API || "http://localhost:3002",
   catalog: process.env.NEXT_PUBLIC_CATALOG_API || "http://localhost:3003",
   interaction: process.env.NEXT_PUBLIC_INTERACTION_API || "http://localhost:3004",
+  order: process.env.NEXT_PUBLIC_ORDER_API || "https://localhost:3005",
+  cart: process.env.NEXT_PUBLIC_CART_API || "https://localhost:3006",
 };
 
 function getToken(): string | null {
