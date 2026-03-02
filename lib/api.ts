@@ -170,6 +170,9 @@ export const artists = {
       method: "POST",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
+  adminListAll: () => request<ArtistProfile[]>("artist", "/api/artists/admin/all"),
+  toggleValidation: (id: number) =>
+    request<ArtistProfile>("artist", `/api/artists/${id}/toggle-validation`, { method: "PATCH" }),
 };
 
 export const shops = {

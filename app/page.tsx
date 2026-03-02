@@ -121,7 +121,7 @@ export default function HomePage() {
               <h2 className="font-mono text-3xl sm:text-4xl lg:text-5xl leading-tight text-stone-800">
                 <span className="relative">
                   {displayText}
-                  <span className={`absolute -right-3 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600`}>_</span>
+                  <span className={`absolute -right-7 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600`}>_</span>
                 </span>
                 <br />
               </h2>

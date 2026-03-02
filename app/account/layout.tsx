@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
   Box, TrendingUp, MessageSquare, Heart, Palette,
-  Hourglass
+  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -65,6 +65,15 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 
   const navItems = user.role === "artist" ? artistNav : buyerNav;
 
+  const adminNav = [
+    { href: "/account/admin", icon: Shield, label: "administration" },
+    { href: "/account/admin/users", icon: Users, label: "utilisateurs" },
+    { href: "/account/admin/artists", icon: Palette, label: "artistes" },
+    { href: "/account/admin/orders", icon: ShoppingBag, label: "commandes" },
+    { href: "/account/admin/categories", icon: FolderOpen, label: "catégories" },
+    { href: "/account/admin/tags", icon: Tag, label: "tags" },
+  ];
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 font-mono">
       <div className="flex flex-col md:flex-row gap-8">
@@ -96,6 +105,21 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+
+          {/* Admin navigation */}
+          {user.role === "admin" && (
+            <div className="mt-6 border-t border-stone-200 pt-4">
+              <p className="px-3 mb-2 text-[10px] uppercase tracking-wider text-stone-400">admin</p>
+              <nav className="space-y-1">
+                {adminNav.map((item) => (
+                  <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+                    <item.icon size={16} />
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Logout */}
           <div className="mt-6 border-t border-stone-200 pt-4">
