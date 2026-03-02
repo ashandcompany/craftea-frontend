@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { products, categories, tags as tagsApi, type Product, type Category, type Tag, type PaginatedProducts } from "@/lib/api";
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 function ProductsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const cacheRef = useRef<Map<string, PaginatedProducts>>(new Map());
 
   const [data, setData] = useState<PaginatedProducts | null>(null);
   const [cats, setCats] = useState<Category[]>([]);
@@ -18,21 +19,37 @@ function ProductsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [categoryId, setCategoryId] = useState(searchParams.get("category_id") || "");
   const [selectedTag, setSelectedTag] = useState(searchParams.get("tag") || "");
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [filtersVisible, setFiltersVisible] = useState(false);
 
+  const getCacheKey = () => {
+    return `${page}:${search}:${categoryId}:${selectedTag}`;
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     setError("");
     try {
+      const cacheKey = getCacheKey();
+      const cached = cacheRef.current.get(cacheKey);
+      
+      if (cached) {
+        setData(cached);
+        setLoading(false);
+        return;
+      }
+
       const params: Record<string, any> = { page, limit: 12 };
       if (search) params.search = search;
       if (categoryId) params.category_id = Number(categoryId);
-      if (selectedTag) params.tag = selectedTag;
+      if (selectedTag) params.tag = Number(selectedTag);
       const res = await products.list(params);
+      
+      cacheRef.current.set(cacheKey, res);
       setData(res);
     } catch (err: any) {
       setError(err.message || "Erreur");
@@ -49,15 +66,20 @@ function ProductsPageContent() {
 
   useEffect(() => {
     fetchProducts();
-  }, [page, categoryId, selectedTag]);
+  }, [page, categoryId, selectedTag, search]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchProducts();
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== search) {
+        setSearch(searchInput);
+        setPage(1);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const clearFilters = () => {
+    setSearchInput("");
     setSearch("");
     setCategoryId("");
     setSelectedTag("");
@@ -101,21 +123,15 @@ function ProductsPageContent() {
         <div className="mb-8 border border-stone-200 bg-stone-50 p-5">
           <div className="space-y-4">
             {/* Search */}
-            <form onSubmit={handleSearch} className="relative">
+            <div className="relative">
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="rechercher..."
-                className="w-full border border-stone-200 bg-white px-4 py-2 pr-12 text-sm text-stone-800 placeholder-stone-400 outline-none focus:border-stone-600"
+                className="w-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-800 placeholder-stone-400 outline-none focus:border-stone-600"
               />
-              <button 
-                type="submit" 
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600"
-              >
-                ↵
-              </button>
-            </form>
+            </div>
 
             {/* Category & Tag selects */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -146,7 +162,7 @@ function ProductsPageContent() {
                   >
                     <option value="">tous tags</option>
                     {allTags.map((t) => (
-                      <option key={t.id} value={t.name}>
+                      <option key={t.id} value={String(t.id)}>
                         #{t.name}
                       </option>
                     ))}
@@ -159,8 +175,13 @@ function ProductsPageContent() {
         </div>
       )}
 
+      {/* Subtle reload indicator */}
+      {loading && data && (
+        <div className="mb-4 text-xs text-stone-400 animate-pulse">mise à jour...</div>
+      )}
+
       {/* Results */}
-      {loading ? (
+      {loading && !data ? (
         <div className="py-20 text-center text-stone-400">
           <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
           <p className="mt-2 text-sm">chargement...</p>
@@ -182,7 +203,7 @@ function ProductsPageContent() {
           )}
         </div>
       ) : (
-        <>
+        <div className={loading ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
           {/* Product grid */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {data.data.map((product, index) => (
@@ -234,7 +255,7 @@ function ProductsPageContent() {
               </button>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

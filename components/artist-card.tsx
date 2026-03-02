@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ArtistProfile } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
+import { Pin } from "lucide-react";
 
 export function ArtistCard({ artist }: { artist: ArtistProfile }) {
   const initial = artist.id ? String(artist.id).charAt(0) : "?";
@@ -57,7 +58,7 @@ export function ArtistCard({ artist }: { artist: ArtistProfile }) {
         {/* Shops */}
         {artist.shops && artist.shops.length > 0 && (
           <div className="flex items-center gap-1 border-t border-stone-200 pt-2 text-[10px] uppercase tracking-wider text-stone-400">
-            <span>📍</span>
+            <Pin width={10} className="me-1"/>
             <span>
               {artist.shops.length} boutique{artist.shops.length > 1 ? "s" : ""}
             </span>

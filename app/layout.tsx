@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="scroll-smooth">
-      <body className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased`}>
+      <body suppressHydrationWarning className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased`}>
         <Providers>
           <Navbar />
           <main className="min-h-[calc(100vh-4rem)]">
