@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { categories as categoriesApi, type Category } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Hourglass } from "lucide-react";
 
 export default function CategoriesPage() {
   const [cats, setCats] = useState<Category[]>([]);
@@ -31,7 +32,7 @@ export default function CategoriesPage() {
       {/* Content */}
       {loading ? (
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement des catégories...</p>
         </div>
       ) : error ? (

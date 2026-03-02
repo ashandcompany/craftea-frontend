@@ -7,6 +7,7 @@ import { products, categories, tags as tagsApi, type Product, type Category, typ
 import { ProductCard } from "@/components/product-card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Hourglass } from "lucide-react";
 
 function ProductsPageContent() {
   const searchParams = useSearchParams();
@@ -183,7 +184,7 @@ function ProductsPageContent() {
       {/* Results */}
       {loading && !data ? (
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement...</p>
         </div>
       ) : error ? (
@@ -266,7 +267,7 @@ export default function ProductsPage() {
     <Suspense fallback={
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement...</p>
         </div>
       </div>

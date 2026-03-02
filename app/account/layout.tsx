@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
-  Box, TrendingUp, MessageSquare, Heart, Palette
+  Box, TrendingUp, MessageSquare, Heart, Palette,
+  Hourglass
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -18,7 +19,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement...</p>
         </div>
       </div>

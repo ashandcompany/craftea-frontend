@@ -14,7 +14,8 @@ import {
 } from "@/lib/api";
 import {
   Heart, Box, Star, Store, TrendingUp,
-  ArrowRight, Package, Settings, MessageSquare, ShoppingBag
+  ArrowRight, Package, Settings, MessageSquare, ShoppingBag,
+  Hourglass
 } from "lucide-react";
 import { assetUrl } from "@/lib/utils";
 
@@ -103,7 +104,7 @@ export default function AccountDashboard() {
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">
-          <div className="inline-block h-5 w-5 animate-pulse">⏳</div>
+          <div className="inline-block h-5 w-5 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement du tableau de bord...</p>
         </div>
       ) : (

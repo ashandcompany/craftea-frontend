@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { artists as artistsApi, type ArtistProfile } from "@/lib/api";
 import { ArtistCard } from "@/components/artist-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Hourglass } from "lucide-react";
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState<ArtistProfile[]>([]);
@@ -31,7 +32,7 @@ export default function ArtistsPage() {
       {/* Content */}
       {loading ? (
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement des artisans...</p>
         </div>
       ) : error ? (

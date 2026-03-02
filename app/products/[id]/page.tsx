@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { assetUrl } from "@/lib/utils";
+import { Hourglass } from "lucide-react";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -154,7 +155,7 @@ export default function ProductDetailPage() {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement du produit...</p>
         </div>
       </div>

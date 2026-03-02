@@ -7,7 +7,7 @@ import { artists as artistsApi, products as productsApi, type ArtistProfile, typ
 import { ProductCard } from "@/components/product-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assetUrl } from "@/lib/utils";
-import { Pin } from 'lucide-react';
+import { Hourglass, Pin } from 'lucide-react';
 
 export default function ArtistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -72,7 +72,7 @@ export default function ArtistDetailPage() {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
-          <div className="inline-block h-6 w-6 animate-pulse">⏳</div>
+          <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
           <p className="mt-2 text-sm">chargement de l'artiste...</p>
         </div>
       </div>
@@ -248,7 +248,7 @@ export default function ArtistDetailPage() {
       {productsLoading ? (
         <section className="mt-10">
           <div className="py-10 text-center text-stone-400">
-            <div className="inline-block h-5 w-5 animate-pulse">⏳</div>
+            <div className="inline-block h-5 w-5 animate-pulse"><Hourglass /></div>
             <p className="mt-1 text-xs">chargement des créations...</p>
           </div>
         </section>
