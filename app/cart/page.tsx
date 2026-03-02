@@ -144,8 +144,8 @@ export default function CartPage() {
             : "-translate-y-2 opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-3 bg-white border-2 border-sage-200 shadow-lg px-4 py-3 min-w-[280px]">
-          <div className="flex-shrink-0">
+        <div className="flex items-center gap-3 bg-white border-2 border-sage-200 shadow-lg px-4 py-3 min-w-70">
+          <div className="shrink-0">
             <div className="h-8 w-8 rounded-full bg-sage-100 flex items-center justify-center">
               <CheckCircle size={18} className="text-sage-700" />
             </div>
@@ -155,7 +155,7 @@ export default function CartPage() {
           </div>
           <button
             onClick={() => setNotification(prev => ({ ...prev, visible: false }))}
-            className="flex-shrink-0 text-stone-400 hover:text-stone-600 transition-colors"
+            className="shrink-0 text-stone-400 hover:text-stone-600 transition-colors"
           >
             <X size={16} />
           </button>
@@ -197,7 +197,7 @@ export default function CartPage() {
       )}
 
       {items.length === 0 ? (
-        <div className="py-16 sm:py-20 text-center bg-gradient-to-b from-white to-sage-50/30 rounded-lg border border-sage-200">
+        <div className="py-16 sm:py-20 text-center bg-linear-to-b from-white to-sage-50/30 rounded-lg border border-sage-200">
           <div className="relative inline-block">
             <ShoppingCart size={64} strokeWidth={1} className="text-sage-300" />
             <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-sage-100 flex items-center justify-center">
