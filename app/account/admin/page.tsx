@@ -213,7 +213,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-stone-400 font-mono">#{String(order.id).padStart(4, "0")}</span>
                       <div>
-                        <p className="text-sm text-stone-700">{order.total.toFixed(2)} €</p>
+                        <p className="text-sm text-stone-700">{Number(order.total).toFixed(2)} €</p>
                         <p className="text-[10px] text-stone-400">{order.items?.length || 0} article{(order.items?.length || 0) > 1 ? "s" : ""}</p>
                       </div>
                     </div>

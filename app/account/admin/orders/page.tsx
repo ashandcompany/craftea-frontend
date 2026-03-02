@@ -38,7 +38,6 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [search, setSearch] = useState("");
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
@@ -57,16 +56,6 @@ export default function AdminOrdersPage() {
     router.push("/account");
     return null;
   }
-
-  const handleStatusChange = async (order: Order, newStatus: OrderStatus) => {
-    if (newStatus === order.status) return;
-    setActionLoading(order.id);
-    try {
-      const updated = await ordersApi.updateStatus(order.id, newStatus);
-      setOrdersList((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    } catch { /* ignore */ }
-    setActionLoading(null);
-  };
 
   const filtered = ordersList.filter((o) => {
     const matchSearch = !search || String(o.id).includes(search) || String(o.user_id).includes(search);
@@ -139,18 +128,17 @@ export default function AdminOrdersPage() {
       ) : (
         <div className="border border-stone-200 divide-y divide-stone-100">
           {/* Table header */}
-          <div className="hidden md:grid md:grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-2 bg-stone-50 text-[10px] uppercase tracking-wider text-stone-400">
+          <div className="hidden md:grid md:grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2 bg-stone-50 text-[10px] uppercase tracking-wider text-stone-400">
             <span>n°</span>
             <span>détails</span>
             <span>total</span>
             <span>statut</span>
-            <span>modifier</span>
           </div>
 
           {filtered.map((order) => (
             <div
               key={order.id}
-              className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto_auto_auto] gap-2 md:gap-4 px-4 py-3 md:items-center"
+              className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto_auto] gap-2 md:gap-4 px-4 py-3 md:items-center"
             >
               {/* Order number */}
               <span className="text-sm font-mono text-stone-500">
@@ -170,28 +158,13 @@ export default function AdminOrdersPage() {
 
               {/* Total */}
               <p className="text-sm font-medium text-stone-800">
-                {order.total.toFixed(2)} €
+                {Number(order.total).toFixed(2)} €
               </p>
 
               {/* Current status */}
               <span className={`inline-block border px-2 py-0.5 text-[10px] text-center ${STATUS_COLORS[order.status] || "bg-stone-50 text-stone-500 border-stone-200"}`}>
                 {STATUS_OPTIONS.find((s) => s.value === order.status)?.label || order.status}
               </span>
-
-              {/* Change status */}
-              <div className="relative">
-                <select
-                  value={order.status}
-                  onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
-                  disabled={actionLoading === order.id}
-                  className="appearance-none border border-stone-200 px-2 py-1 pr-6 text-xs text-stone-600 bg-white disabled:opacity-50 focus:outline-none focus:border-stone-400"
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
-              </div>
             </div>
           ))}
         </div>

@@ -385,6 +385,7 @@ export interface OrderItem {
   id: number;
   order_id: number;
   product_id: number;
+  shop_id?: number;
   quantity: number;
   price: number;
 }
@@ -404,6 +405,8 @@ export const orders = {
     request<Order>("order", "/api/orders", { method: "POST", body: JSON.stringify({ items }) }),
   my: () =>
     request<Order[]>("order", "/api/orders/my"),
+  artistOrders: () =>
+    request<Order[]>("order", "/api/orders/artist/my"),
   list: () =>
     request<Order[]>("order", "/api/orders/"),
   get: (id: number) =>

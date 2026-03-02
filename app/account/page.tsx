@@ -8,6 +8,7 @@ import {
   products as productsApi,
   artists as artistsApi,
   reviews as reviewsApi,
+  orders as ordersApi,
   type ArtistProfile,
   type Shop,
   ApiError,
@@ -15,7 +16,7 @@ import {
 import {
   Heart, Box, Star, Store, TrendingUp,
   ArrowRight, Package, Settings, MessageSquare, ShoppingBag,
-  Hourglass
+  Hourglass, Truck
 } from "lucide-react";
 import { assetUrl } from "@/lib/utils";
 
@@ -27,6 +28,8 @@ export default function AccountDashboard() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [productCount, setProductCount] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState<number | null>(null);
+  const [orderCount, setOrderCount] = useState<number | null>(null);
+  const [artistOrderCount, setArtistOrderCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +49,13 @@ export default function AccountDashboard() {
       reviewsApi.mine()
         .then((r) => setReviewCount(r.data.length))
         .catch(() => setReviewCount(0))
+    );
+
+    // Orders count
+    loads.push(
+      ordersApi.my()
+        .then((r) => setOrderCount(r.length))
+        .catch(() => setOrderCount(0))
     );
 
     // Artist-specific data
@@ -75,6 +85,13 @@ export default function AccountDashboard() {
               setProductCount(0);
             }
           })
+      );
+
+      // Artist orders count
+      loads.push(
+        ordersApi.artistOrders()
+          .then((r) => setArtistOrderCount(r.length))
+          .catch(() => setArtistOrderCount(0))
       );
     }
 
@@ -127,6 +144,14 @@ export default function AccountDashboard() {
               <p className="text-2xl text-stone-800">{reviewCount ?? "—"}</p>
             </div>
 
+            <div className="border border-stone-200 p-4 space-y-1">
+              <div className="flex items-center gap-2 text-stone-400">
+                <ShoppingBag size={14} />
+                <span className="text-[10px] uppercase tracking-wider">commandes</span>
+              </div>
+              <p className="text-2xl text-stone-800">{orderCount ?? "—"}</p>
+            </div>
+
             {user.role === "artist" && (
               <>
                 <div className="border border-stone-200 p-4 space-y-1">
@@ -143,6 +168,14 @@ export default function AccountDashboard() {
                     <span className="text-[10px] uppercase tracking-wider">produits</span>
                   </div>
                   <p className="text-2xl text-stone-800">{productCount ?? "—"}</p>
+                </div>
+
+                <div className="border border-stone-200 p-4 space-y-1">
+                  <div className="flex items-center gap-2 text-stone-400">
+                    <Truck size={14} />
+                    <span className="text-[10px] uppercase tracking-wider">commandes reçues</span>
+                  </div>
+                  <p className="text-2xl text-stone-800">{artistOrderCount ?? "—"}</p>
                 </div>
               </>
             )}
@@ -175,6 +208,20 @@ export default function AccountDashboard() {
                   <div>
                     <p className="text-sm text-stone-800">Mes favoris</p>
                     <p className="text-[10px] text-stone-400">{favCount ?? 0} article{(favCount ?? 0) > 1 ? "s" : ""} sauvegardé{(favCount ?? 0) > 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+                <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+              </Link>
+
+              <Link
+                href="/account/orders"
+                className="group flex items-center justify-between border border-stone-200 p-4 hover:border-stone-400 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <ShoppingBag size={18} className="text-stone-400 group-hover:text-stone-600" />
+                  <div>
+                    <p className="text-sm text-stone-800">Mes commandes</p>
+                    <p className="text-[10px] text-stone-400">{orderCount ?? 0} commande{(orderCount ?? 0) > 1 ? "s" : ""}</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />

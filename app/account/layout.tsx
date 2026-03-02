@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
   Box, TrendingUp, MessageSquare, Heart, Palette,
-  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag
+  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -33,8 +33,8 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
-    // Pour "mon profil", seulement actif si on est exactement sur cette route
-    if (href === "/account/settings") {
+    // Pour "mon profil" et "administration", seulement actif si on est exactement sur ces routes
+    if (href === "/account/settings" || href === "/account/admin") {
       return pathname === href;
     }
     // Pour d'autres routes, vérifier le prefix (sauf /account qui a sa propre logique)
@@ -51,6 +51,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const buyerNav = [
     { href: "/account", icon: LayoutDashboard, label: "tableau de bord" },
     { href: "/account/settings", icon: User, label: "mon profil" },
+    { href: "/account/orders", icon: ShoppingBag, label: "mes commandes" },
     { href: "/favorites", icon: Heart, label: "mes favoris" },
   ];
 
@@ -60,6 +61,8 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account/settings/artist", icon: Palette, label: "profil artiste" },
     { href: "/account/settings/shop", icon: Store, label: "mes boutiques" },
     { href: "/account/products", icon: Box, label: "mes produits" },
+    { href: "/account/artist-orders", icon: Truck, label: "commandes reçues" },
+    { href: "/account/orders", icon: ShoppingBag, label: "mes achats" },
     { href: "/favorites", icon: Heart, label: "mes favoris" },
   ];
 
