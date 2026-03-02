@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { products, reviews, favorites, type Product, type Review } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { assetUrl } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { assetUrl } from "@/lib/utils";
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { addItem, items: cartItems } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [productReviews, setProductReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState<{ average: number; count: number } | null>(null);
@@ -18,6 +20,15 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
+
+  // Cart
+  const [qty, setQty] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartSuccess, setCartSuccess] = useState(false);
+
+  // Quantité déjà dans le panier pour ce produit
+  const inCart = cartItems.find((i) => i.product_id === Number(id))?.quantity ?? 0;
+  const maxQty = product ? Math.max(0, product.stock - inCart) : 0;
 
   // Review form
   const [rating, setRating] = useState(5);
@@ -55,6 +66,22 @@ export default function ProductDetailPage() {
     }
     load();
   }, [id, user]);
+
+  const handleAddToCart = async () => {
+    if (!user || !product) return;
+    setAddingToCart(true);
+    setCartSuccess(false);
+    try {
+      await addItem(product.id, qty);
+      setCartSuccess(true);
+      setQty(1);
+      setTimeout(() => setCartSuccess(false), 2000);
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de l'ajout au panier");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   const toggleFavorite = async () => {
     if (!user) return;
@@ -277,6 +304,48 @@ export default function ProductDetailPage() {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Add to cart */}
+          {user && product.is_active && product.stock > 0 && (
+            <div className="space-y-3 border-t border-stone-200 pt-4">
+              <p className="text-xs uppercase tracking-wider text-stone-400">ajouter au panier</p>
+              {inCart > 0 && (
+                <p className="text-xs text-stone-500">
+                  déjà {inCart} dans le panier · {maxQty > 0 ? `${maxQty} restant${maxQty > 1 ? 's' : ''}` : 'stock atteint'}
+                </p>
+              )}
+              {maxQty > 0 ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center border border-stone-200">
+                    <button
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      className="px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-30"
+                      disabled={qty <= 1}
+                    >
+                      −
+                    </button>
+                    <span className="w-10 text-center text-sm text-stone-800">{qty}</span>
+                    <button
+                      onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                      className="px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-30"
+                      disabled={qty >= maxQty}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="flex-1 border border-stone-800 bg-stone-800 px-4 py-2 text-sm text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+                  >
+                    {addingToCart ? 'ajout...' : cartSuccess ? '✓ ajouté !' : 'ajouter au panier'}
+                  </button>
+                </div>
+              ) : inCart > 0 ? (
+                <p className="text-xs italic text-stone-400">stock maximum atteint</p>
+              ) : null}
             </div>
           )}
 
