@@ -17,10 +17,12 @@ import {
   shops as shopsApi,
   orders,
   payments,
+  addresses as addressesApi,
   type Product,
   type Shop,
   type ShopShippingProfile,
   type ShippingZone,
+  type Address,
 } from "@/lib/api";
 import { countryToZone, computeShopShipping } from "@/app/cart/page";
 import { assetUrl } from "@/lib/utils";
@@ -264,14 +266,27 @@ function CheckoutContent() {
   const [countryCode, setCountryCode] = useState(countryParam);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+
   const zone: ShippingZone = countryToZone(countryCode);
 
-  // Pre-fill from user profile
+  // Pre-fill from user profile and load saved addresses
   useEffect(() => {
     if (user) {
       setGivenName((prev) => prev || user.firstname || "");
       setFamilyName((prev) => prev || user.lastname || "");
       setBillingEmail((prev) => prev || user.email || "");
+
+      // Load saved addresses
+      setLoadingAddresses(true);
+      addressesApi
+        .list()
+        .then(setSavedAddresses)
+        .catch(() => {})
+        .finally(() => setLoadingAddresses(false));
     }
   }, [user]);
 
@@ -386,6 +401,15 @@ function CheckoutContent() {
   }, [shopGroups, productMap, shippingProfiles, zone]);
 
   const grandTotal = subtotal + totalShipping;
+
+  // Apply selected address to form
+  const handleSelectAddress = (address: Address) => {
+    setSelectedAddressId(address.id);
+    if (address.street) setAddressLine(address.street);
+    if (address.city) setCity(address.city);
+    if (address.postal_code) setPostalCode(address.postal_code);
+    if (address.country) setCountryCode(address.country);
+  };
 
   // Create order + PaymentIntent
   const handleBillingSubmit = async (e: React.FormEvent) => {
@@ -672,12 +696,55 @@ function CheckoutContent() {
                 </div>
               </div>
 
+              {/* Saved addresses */}
+              {savedAddresses.length > 0 && (
+                <div className="border-2 border-sage-200 bg-white p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MapPin size={16} className="text-sage-600" />
+                    <h2 className="text-sm uppercase tracking-wider text-sage-700">
+                      Mes adresses
+                    </h2>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {savedAddresses.map((addr) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectAddress(addr)}
+                        className={`w-full text-left border px-3 py-3 text-xs transition-colors ${
+                          selectedAddressId === addr.id
+                            ? "border-sage-400 bg-sage-50"
+                            : "border-sage-200 bg-white hover:border-sage-300"
+                        }`}
+                      >
+                        <div className="font-medium text-stone-800">
+                          {addr.label || "Adresse sans label"}
+                        </div>
+                        <div className="text-stone-600 mt-1">
+                          {addr.street}
+                        </div>
+                        <div className="text-stone-500">
+                          {addr.postal_code} {addr.city} — {addr.country}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-sage-100 pt-4">
+                    <p className="text-xs text-sage-600 mb-3">
+                      Ou remplir une nouvelle adresse :
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Billing address */}
               <div className="border-2 border-sage-200 bg-white p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <MapPin size={16} className="text-sage-600" />
                   <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                    Adresse de livraison
+                    {savedAddresses.length > 0 && selectedAddressId
+                      ? "Vérifier l'adresse"
+                      : "Adresse de livraison"}
                   </h2>
                 </div>
 
