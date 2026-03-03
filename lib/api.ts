@@ -226,6 +226,9 @@ export interface Product {
   stock: number;
   is_active: boolean;
   creation_time?: number;
+  processing_time_min?: number;
+  processing_time_max?: number;
+  processing_time_unit?: 'days' | 'weeks';
   delivery_time?: number;
   shipping_fee?: number | null;
   images?: ProductImage[];
@@ -272,7 +275,7 @@ export const products = {
     return request<PaginatedProducts>("catalog", `/api/products/${query ? `?${query}` : ""}`);
   },
   get: (id: number) => request<Product>("catalog", `/api/products/${id}`),
-  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; creation_time?: number; delivery_time?: number; images?: File[]; tags?: number[] }) => {
+  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time?: number; images?: File[]; tags?: number[] }) => {
     const formData = new FormData();
     formData.append('shop_id', String(data.shop_id));
     if (data.category_id) formData.append('category_id', String(data.category_id));
@@ -280,7 +283,9 @@ export const products = {
     if (data.description) formData.append('description', data.description);
     if (data.price !== undefined) formData.append('price', String(data.price));
     if (data.stock !== undefined) formData.append('stock', String(data.stock));
-    if (data.creation_time !== undefined) formData.append('creation_time', String(data.creation_time));
+    if (data.processing_time_min !== undefined) formData.append('processing_time_min', String(data.processing_time_min));
+    if (data.processing_time_max !== undefined) formData.append('processing_time_max', String(data.processing_time_max));
+    if (data.processing_time_unit) formData.append('processing_time_unit', data.processing_time_unit);
     if (data.delivery_time !== undefined) formData.append('delivery_time', String(data.delivery_time));
     if (data.images && data.images.length > 0) {
       data.images.forEach((file) => formData.append('images', file));

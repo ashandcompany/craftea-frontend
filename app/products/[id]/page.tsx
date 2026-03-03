@@ -280,10 +280,17 @@ export default function ProductDetailPage() {
               <p className="text-xs uppercase tracking-wider text-stone-400">stock</p>
               <p className="text-sm text-stone-700">{product.stock} unité{product.stock > 1 ? 's' : ''}</p>
             </div>
-            {product.creation_time && (
+            {(product.processing_time_min || product.processing_time_max) && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-stone-400">fabrication</p>
-                <p className="text-sm text-stone-700">{product.creation_time} jours</p>
+                <p className="text-sm text-stone-700">
+                  {product.processing_time_min && product.processing_time_max
+                    ? `${product.processing_time_min} - ${product.processing_time_max}`
+                    : product.processing_time_min
+                    ? `à partir de ${product.processing_time_min}`
+                    : `jusqu'à ${product.processing_time_max}`}
+                  {' '}{product.processing_time_unit === 'weeks' ? 'semaines' : 'jours'}
+                </p>
               </div>
             )}
             {product.delivery_time && (
