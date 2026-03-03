@@ -463,17 +463,21 @@ export interface Payment {
   currency: string;
   status: PaymentStatus;
   idempotency_key: string;
-  square_payment_id?: string;
-  source_id?: string;
-  square_receipt_url?: string;
+  stripe_payment_intent_id?: string;
+  stripe_client_secret?: string;
+  stripe_receipt_url?: string;
   error_detail?: string;
   created_at: string;
   updated_at: string;
 }
 
 export const payments = {
-  create: (data: { order_id?: number; amount: number; currency?: string; source_id: string }) =>
-    request<Payment>("payment", "/api/payments", { method: "POST", body: JSON.stringify(data) }),
+  /** Create a Stripe PaymentIntent — returns Payment with stripe_client_secret */
+  createIntent: (data: { order_id?: number; amount: number; currency?: string }) =>
+    request<Payment>("payment", "/api/payments/create-intent", { method: "POST", body: JSON.stringify(data) }),
+  /** Confirm a payment after Stripe.js card confirmation */
+  confirm: (data: { payment_intent_id: string }) =>
+    request<Payment>("payment", "/api/payments/confirm", { method: "POST", body: JSON.stringify(data) }),
   my: () =>
     request<Payment[]>("payment", "/api/payments/my"),
   byOrder: (orderId: number) =>

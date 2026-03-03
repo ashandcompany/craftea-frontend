@@ -1,11 +1,23 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import { products as productsApi, orders, payments, type Product } from "@/lib/api";
+import {
+  products as productsApi,
+  orders,
+  payments,
+  type Product,
+} from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -18,64 +30,15 @@ import {
   AlertTriangle,
   XCircle,
   RotateCcw,
-  User,
   MapPin,
+  User,
 } from "lucide-react";
 
-// ── types minimaux pour le SDK Square ─────────────────────────────────────────────────────────────
-declare global {
-  interface Window {
-    Square?: {
-      payments: (appId: string, locationId?: string) => Promise<SquarePayments>;
-    };
-  }
-}
-interface SquarePayments {
-  card: (options?: { style?: object }) => Promise<SquareCard>;
-}
+// ── Stripe publishable key ────────────────────────────────────────────────────
+const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
-interface BillingContact {
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-  phone?: string;
-  addressLines?: string[];
-  city?: string;
-  state?: string;
-  countryCode?: string;
-  postalCode?: string;
-}
-
-interface VerificationDetails {
-  amount: string;
-  billingContact: BillingContact;
-  currencyCode: string;
-  intent: "CHARGE" | "STORE" | "CHARGE_AND_STORE";
-  customerInitiated: boolean;
-  sellerKeyedIn: boolean;
-}
-
-interface TokenResult {
-  status: string;
-  token?: string;
-  errors?: { message: string; field?: string; type?: string }[];
-}
-
-interface SquareCard {
-  attach: (selector: string) => Promise<void>;
-  tokenize: (verificationDetails?: VerificationDetails) => Promise<TokenResult>;
-  destroy: () => Promise<void>;
-}
-
-const SQUARE_APP_ID =
-  process.env.NEXT_PUBLIC_SQUARE_APP_ID || "sandbox-sq0idb-8E6lrkXWdWH4vJBf9ol8g";
-const SQUARE_LOCATION_ID =
-  process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "";
-const SQUARE_SDK_URL =
-  process.env.NEXT_PUBLIC_SQUARE_ENV === "production"
-    ? "https://web.squarecdn.com/v1/square.js"
-    : "https://sandbox.web.squarecdn.com/v1/square.js";
-
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Step = "form" | "processing" | "success" | "error";
 
 interface PaymentError {
@@ -84,53 +47,182 @@ interface PaymentError {
   retryable: boolean;
 }
 
-function parseSquareError(errors: { message: string; type?: string }[]): PaymentError {
-  const first = errors[0];
-  const type = first?.type || "";
-
-  if (type === "VALIDATION_ERROR" || first?.message?.toLowerCase().includes("card number")) {
-    return { title: "Numéro de carte invalide", detail: "Vérifiez le numéro de carte saisi.", retryable: true };
-  }
-  if (first?.message?.toLowerCase().includes("expir")) {
-    return { title: "Carte expirée", detail: "La date d'expiration est dépassée.", retryable: true };
-  }
-  if (first?.message?.toLowerCase().includes("cvv") || first?.message?.toLowerCase().includes("cvc")) {
-    return { title: "CVV incorrect", detail: "Le code de sécurité est invalide.", retryable: true };
-  }
-  return { title: "Erreur de carte", detail: first?.message || "Vérifiez les informations saisies.", retryable: true };
-}
-
 function parseApiError(message: string): PaymentError {
   const lower = message.toLowerCase();
-  if (lower.includes("declined") || lower.includes("déclinée") || lower.includes("insufficient")) {
-    return { title: "Paiement refusé", detail: "Votre banque a refusé la transaction. Contactez votre établissement bancaire.", retryable: false };
+  if (
+    lower.includes("declined") ||
+    lower.includes("déclinée") ||
+    lower.includes("insufficient")
+  ) {
+    return {
+      title: "Paiement refusé",
+      detail:
+        "Votre banque a refusé la transaction. Contactez votre établissement bancaire.",
+      retryable: false,
+    };
   }
   if (lower.includes("expired") || lower.includes("expiré")) {
-    return { title: "Carte expirée", detail: "La date d'expiration est dépassée.", retryable: true };
+    return {
+      title: "Carte expirée",
+      detail: "La date d'expiration est dépassée.",
+      retryable: true,
+    };
   }
-  if (lower.includes("cvv") || lower.includes("security code")) {
-    return { title: "CVV invalide", detail: "Le code de sécurité de votre carte est incorrect.", retryable: true };
-  }
-  if (lower.includes("network") || lower.includes("fetch") || lower.includes("timeout")) {
-    return { title: "Erreur réseau", detail: "La connexion a échoué. Vérifiez votre connexion internet et réessayez.", retryable: true };
+  if (
+    lower.includes("network") ||
+    lower.includes("fetch") ||
+    lower.includes("timeout")
+  ) {
+    return {
+      title: "Erreur réseau",
+      detail:
+        "La connexion a échoué. Vérifiez votre connexion internet et réessayez.",
+      retryable: true,
+    };
   }
   if (lower.includes("stock")) {
-    return { title: "Stock insuffisant", detail: "Un ou plusieurs articles ne sont plus disponibles en quantité suffisante.", retryable: false };
+    return {
+      title: "Stock insuffisant",
+      detail:
+        "Un ou plusieurs articles ne sont plus disponibles en quantité suffisante.",
+      retryable: false,
+    };
   }
-  return { title: "Erreur de paiement", detail: message || "Une erreur inattendue s'est produite.", retryable: true };
+  return {
+    title: "Erreur de paiement",
+    detail: message || "Une erreur inattendue s'est produite.",
+    retryable: true,
+  };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Inner form — rendered inside <Elements> so useStripe() / useElements() work
+// ═══════════════════════════════════════════════════════════════════════════════
+function CheckoutForm({
+  total,
+  orderId,
+  paymentIntentId,
+  onSuccess,
+  onError,
+}: {
+  total: number;
+  orderId: number;
+  paymentIntentId: string;
+  onSuccess: (orderId: number) => void;
+  onError: (err: PaymentError) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [elementReady, setElementReady] = useState(false);
+  const { clear } = useCart();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + "/checkout",
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        onError({
+          title: "Paiement échoué",
+          detail: error.message || "Une erreur est survenue lors du paiement.",
+          retryable:
+            error.type === "card_error" ||
+            error.type === "validation_error",
+        });
+        setProcessing(false);
+        return;
+      }
+
+      // Payment succeeded — confirm on backend & clear cart
+      await payments.confirm({ payment_intent_id: paymentIntentId });
+      await clear();
+      onSuccess(orderId);
+    } catch (err: any) {
+      onError(parseApiError(err.message || ""));
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Stripe Payment Element */}
+      <div className="border-2 border-sage-200 bg-white p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard size={16} className="text-sage-600" />
+          <h2 className="text-sm uppercase tracking-wider text-sage-700">
+            Informations de paiement
+          </h2>
+        </div>
+        <PaymentElement
+          onReady={() => setElementReady(true)}
+          options={{ layout: "tabs" }}
+        />
+        {!elementReady && (
+          <div className="flex items-center gap-2 text-xs text-sage-500 mt-2">
+            <Loader2 size={12} className="animate-spin" />
+            Chargement du formulaire de paiement…
+          </div>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        disabled={processing || !stripe || !elements || !elementReady}
+        className="w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-4 text-sm text-white hover:bg-sage-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {processing ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            traitement en cours…
+          </>
+        ) : (
+          <>
+            <Lock size={16} />
+            payer {total.toFixed(2)} €
+          </>
+        )}
+      </button>
+
+      <div className="flex items-center justify-center gap-2 text-xs text-stone-400">
+        <ShieldCheck size={14} />
+        <span>Paiement sécurisé — propulsé par Stripe</span>
+      </div>
+    </form>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Main page
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function CheckoutPage() {
   const { user, loading: authLoading } = useAuth();
-  const { items, loading: cartLoading, clear } = useCart();
+  const { items, loading: cartLoading } = useCart();
   const router = useRouter();
 
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [sdkReady, setSdkReady] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [paymentError, setPaymentError] = useState<PaymentError | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<number | null>(null);
+
+  // Stripe PaymentIntent state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [intentLoading, setIntentLoading] = useState(false);
+
+  // Billing fields
   const [givenName, setGivenName] = useState("");
   const [familyName, setFamilyName] = useState("");
   const [billingEmail, setBillingEmail] = useState("");
@@ -141,10 +233,7 @@ export default function CheckoutPage() {
   const [countryCode, setCountryCode] = useState("FR");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const cardRef = useRef<SquareCard | null>(null);
-  const sdkLoadedRef = useRef(false);
-
-  // Pré-remplir les champs billing depuis le profil utilisateur
+  // Pre-fill from user profile
   useEffect(() => {
     if (user) {
       setGivenName((prev) => prev || user.firstname || "");
@@ -153,19 +242,19 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  // Redirect si pas connecté
+  // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
-  // Redirect si panier vide
+  // Redirect if cart empty
   useEffect(() => {
     if (!cartLoading && items.length === 0 && step === "form") {
       router.push("/cart");
     }
   }, [cartLoading, items, step, router]);
 
-  // Charger les produits
+  // Load products
   useEffect(() => {
     if (cartLoading || items.length === 0) {
       setLoadingProducts(false);
@@ -182,85 +271,16 @@ export default function CheckoutPage() {
     });
   }, [items, cartLoading]);
 
-  // Charger le SDK Square
-  useEffect(() => {
-    if (sdkLoadedRef.current) return;
-    sdkLoadedRef.current = true;
-
-    const existing = document.getElementById("square-sdk");
-    if (existing) {
-      setSdkReady(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "square-sdk";
-    script.src = SQUARE_SDK_URL;
-    script.onload = () => setSdkReady(true);
-    script.onerror = () =>
-      setPaymentError({
-        title: "Module de paiement indisponible",
-        detail: "Impossible de charger le module Square. Vérifiez votre connexion et rechargez la page.",
-        retryable: false,
-      });
-    document.head.appendChild(script);
-  }, []);
-
-  // Monter le formulaire carte une fois le SDK prêt
-  useEffect(() => {
-    if (!sdkReady || step !== "form" || !window.Square) return;
-
-    let mounted = true;
-    (async () => {
-      try {
-        if (!SQUARE_APP_ID || !SQUARE_LOCATION_ID) {
-          throw new Error(
-            `Configuration Square manquante : ${!SQUARE_APP_ID ? "APP_ID" : ""}${!SQUARE_APP_ID && !SQUARE_LOCATION_ID ? " et " : ""}${!SQUARE_LOCATION_ID ? "LOCATION_ID" : ""}`,
-          );
-        }
-        const paymentsInstance = await window.Square!.payments(
-          SQUARE_APP_ID,
-          SQUARE_LOCATION_ID,
-        );
-        const card = await paymentsInstance.card();
-        await card.attach("#square-card-container");
-        if (mounted) cardRef.current = card;
-      } catch (err) {
-        console.error("[Square SDK] Initialisation échouée :", err);
-        if (mounted)
-          setPaymentError({
-            title: "Initialisation échouée",
-            detail:
-              err instanceof Error
-                ? err.message
-                : "Le formulaire de paiement n'a pas pu s'initialiser. Rechargez la page.",
-            retryable: false,
-          });
-      }
-    })();
-
-    return () => {
-      mounted = false;
-      cardRef.current?.destroy().catch(() => {});
-      cardRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sdkReady, step]);
-
   const total = items.reduce((sum, item) => {
     const p = productMap[item.product_id];
     return sum + (p ? Number(p.price) * item.quantity : 0);
   }, 0);
 
-  const handleRetry = () => {
-    setPaymentError(null);
-    setStep("form");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Create order + PaymentIntent
+  const handleBillingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPaymentError(null);
 
-    // Valider les champs de facturation
     const errors: Record<string, string> = {};
     if (!givenName.trim()) errors.givenName = "Le prénom est requis.";
     if (!familyName.trim()) errors.familyName = "Le nom est requis.";
@@ -270,54 +290,10 @@ export default function CheckoutPage() {
       return;
     }
     setFormErrors({});
-
-    if (!cardRef.current) {
-      setPaymentError({
-        title: "Formulaire non prêt",
-        detail: "Le formulaire de carte n'est pas encore chargé. Patientez quelques secondes.",
-        retryable: true,
-      });
-      return;
-    }
-
-    setStep("processing");
+    setIntentLoading(true);
 
     try {
-      // 1. Construire verificationDetails conformément à la doc Square
-      const billingContact: BillingContact = {
-        givenName: givenName.trim(),
-        familyName: familyName.trim(),
-        email: billingEmail.trim(),
-      };
-      if (phone.trim()) billingContact.phone = phone.trim();
-      if (addressLine.trim()) billingContact.addressLines = [addressLine.trim()];
-      if (city.trim()) billingContact.city = city.trim();
-      if (postalCode.trim()) billingContact.postalCode = postalCode.trim();
-      if (countryCode.trim()) billingContact.countryCode = countryCode.trim();
-
-      const verificationDetails: VerificationDetails = {
-        amount: total.toFixed(2),
-        billingContact,
-        currencyCode: "EUR",
-        intent: "CHARGE",
-        customerInitiated: true,
-        sellerKeyedIn: false,
-      };
-
-      // 2. Tokeniser la carte via Square SDK avec verificationDetails
-      const result = await cardRef.current.tokenize(verificationDetails);
-      if (result.status !== "OK" || !result.token) {
-        setPaymentError(
-          result.errors?.length
-            ? parseSquareError(result.errors)
-            : { title: "Erreur de tokenisation", detail: "Impossible de lire les informations de carte.", retryable: true }
-        );
-        setStep("form");
-        return;
-      }
-      const sourceId = result.token;
-
-      // 3. Créer la commande
+      // 1. Create the order
       const orderItems = items.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
@@ -325,25 +301,58 @@ export default function CheckoutPage() {
       }));
       const order = await orders.create(orderItems);
 
-      // 4. Créer le paiement
-      await payments.create({
+      // 2. Create Stripe PaymentIntent via our backend
+      const payment = await payments.createIntent({
         order_id: order.id,
         amount: total,
         currency: "EUR",
-        source_id: sourceId,
       });
 
-      // 5. Vider le panier
-      await clear();
-
-      setSuccessOrderId(order.id);
-      setStep("success");
+      setOrderId(order.id);
+      setPaymentIntentId(payment.stripe_payment_intent_id!);
+      setClientSecret(payment.stripe_client_secret!);
     } catch (err: any) {
-      const parsed = parseApiError(err.message || "");
-      setPaymentError(parsed);
-      setStep("error");
+      setPaymentError(parseApiError(err.message || ""));
+    } finally {
+      setIntentLoading(false);
     }
   };
+
+  const handleRetry = () => {
+    setPaymentError(null);
+    setClientSecret(null);
+    setPaymentIntentId(null);
+    setOrderId(null);
+    setStep("form");
+  };
+
+  const handlePaymentSuccess = useCallback((oid: number) => {
+    setSuccessOrderId(oid);
+    setStep("success");
+  }, []);
+
+  const handlePaymentError = useCallback((err: PaymentError) => {
+    setPaymentError(err);
+    if (!err.retryable) setStep("error");
+  }, []);
+
+  const elementsOptions = useMemo(
+    () =>
+      clientSecret
+        ? {
+            clientSecret,
+            appearance: {
+              theme: "stripe" as const,
+              variables: {
+                colorPrimary: "#6b7c6e",
+                fontFamily: "ui-monospace, monospace",
+                borderRadius: "0px",
+              },
+            },
+          }
+        : null,
+    [clientSecret],
+  );
 
   const loading = authLoading || cartLoading || loadingProducts;
 
@@ -358,13 +367,16 @@ export default function CheckoutPage() {
 
   if (!user) return null;
 
+  // ── Success screen ──
   if (step === "success") {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 font-mono text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sage-100">
           <CheckCircle className="h-8 w-8 text-sage-700" />
         </div>
-        <h1 className="mt-6 text-2xl font-light text-stone-900">Paiement confirmé</h1>
+        <h1 className="mt-6 text-2xl font-light text-stone-900">
+          Paiement confirmé
+        </h1>
         <p className="mt-2 text-sm text-sage-600">
           Votre commande n°{successOrderId} a bien été enregistrée.
         </p>
@@ -386,14 +398,16 @@ export default function CheckoutPage() {
     );
   }
 
-  // ── Écran d'erreur non-retryable ───────────────────────────────────────────────────────────────────
+  // ── Non-retryable error screen ──
   if (step === "error" && paymentError && !paymentError.retryable) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 font-mono text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
           <XCircle className="h-8 w-8 text-red-500" />
         </div>
-        <h1 className="mt-6 text-2xl font-light text-stone-900">{paymentError.title}</h1>
+        <h1 className="mt-6 text-2xl font-light text-stone-900">
+          {paymentError.title}
+        </h1>
         <p className="mt-2 text-sm text-stone-500">{paymentError.detail}</p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
@@ -407,6 +421,7 @@ export default function CheckoutPage() {
     );
   }
 
+  // ── Main checkout layout ──
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
       {/* Header */}
@@ -418,204 +433,258 @@ export default function CheckoutPage() {
           <ArrowLeft size={14} />
           retour au panier
         </Link>
-        <h1 className="text-2xl font-light tracking-tight text-stone-900">Paiement sécurisé</h1>
+        <h1 className="text-2xl font-light tracking-tight text-stone-900">
+          Paiement sécurisé
+        </h1>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-5">
-        {/* Formulaire paiement */}
+        {/* Left column — forms */}
         <div className="lg:col-span-3">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Informations de facturation (billingContact) */}
-            <div className="border-2 border-sage-200 bg-white p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <User size={16} className="text-sage-600" />
-                <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                  Informations de facturation
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Prénom */}
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">Prénom *</label>
-                  <input
-                    type="text"
-                    value={givenName}
-                    onChange={(e) => {
-                      setGivenName(e.target.value);
-                      if (formErrors.givenName) setFormErrors((prev) => ({ ...prev, givenName: "" }));
-                    }}
-                    placeholder="Jean"
-                    autoComplete="given-name"
-                    className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                      formErrors.givenName ? "border-red-300 bg-red-50" : "border-sage-200 bg-white"
-                    }`}
-                  />
-                  {formErrors.givenName && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertTriangle size={12} />
-                      {formErrors.givenName}
-                    </p>
-                  )}
+          {/* ── Step 1: Billing info ── */}
+          {!clientSecret && (
+            <form onSubmit={handleBillingSubmit} className="space-y-6">
+              {/* Billing contact */}
+              <div className="border-2 border-sage-200 bg-white p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <User size={16} className="text-sage-600" />
+                  <h2 className="text-sm uppercase tracking-wider text-sage-700">
+                    Informations de facturation
+                  </h2>
                 </div>
 
-                {/* Nom */}
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">Nom *</label>
-                  <input
-                    type="text"
-                    value={familyName}
-                    onChange={(e) => {
-                      setFamilyName(e.target.value);
-                      if (formErrors.familyName) setFormErrors((prev) => ({ ...prev, familyName: "" }));
-                    }}
-                    placeholder="Dupont"
-                    autoComplete="family-name"
-                    className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                      formErrors.familyName ? "border-red-300 bg-red-50" : "border-sage-200 bg-white"
-                    }`}
-                  />
-                  {formErrors.familyName && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertTriangle size={12} />
-                      {formErrors.familyName}
-                    </p>
-                  )}
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Prénom *
+                    </label>
+                    <input
+                      type="text"
+                      value={givenName}
+                      onChange={(e) => {
+                        setGivenName(e.target.value);
+                        if (formErrors.givenName)
+                          setFormErrors((p) => ({ ...p, givenName: "" }));
+                      }}
+                      placeholder="Jean"
+                      autoComplete="given-name"
+                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
+                        formErrors.givenName
+                          ? "border-red-300 bg-red-50"
+                          : "border-sage-200 bg-white"
+                      }`}
+                    />
+                    {formErrors.givenName && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                        <AlertTriangle size={12} />
+                        {formErrors.givenName}
+                      </p>
+                    )}
+                  </div>
 
-                {/* Email */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs text-stone-500 mb-1">Email *</label>
-                  <input
-                    type="email"
-                    value={billingEmail}
-                    onChange={(e) => {
-                      setBillingEmail(e.target.value);
-                      if (formErrors.billingEmail) setFormErrors((prev) => ({ ...prev, billingEmail: "" }));
-                    }}
-                    placeholder="jean.dupont@example.com"
-                    autoComplete="email"
-                    className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                      formErrors.billingEmail ? "border-red-300 bg-red-50" : "border-sage-200 bg-white"
-                    }`}
-                  />
-                  {formErrors.billingEmail && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertTriangle size={12} />
-                      {formErrors.billingEmail}
-                    </p>
-                  )}
-                </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Nom *
+                    </label>
+                    <input
+                      type="text"
+                      value={familyName}
+                      onChange={(e) => {
+                        setFamilyName(e.target.value);
+                        if (formErrors.familyName)
+                          setFormErrors((p) => ({ ...p, familyName: "" }));
+                      }}
+                      placeholder="Dupont"
+                      autoComplete="family-name"
+                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
+                        formErrors.familyName
+                          ? "border-red-300 bg-red-50"
+                          : "border-sage-200 bg-white"
+                      }`}
+                    />
+                    {formErrors.familyName && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                        <AlertTriangle size={12} />
+                        {formErrors.familyName}
+                      </p>
+                    )}
+                  </div>
 
-                {/* Téléphone */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs text-stone-500 mb-1">Téléphone</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+33 6 12 34 56 78"
-                    autoComplete="tel"
-                    className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={billingEmail}
+                      onChange={(e) => {
+                        setBillingEmail(e.target.value);
+                        if (formErrors.billingEmail)
+                          setFormErrors((p) => ({ ...p, billingEmail: "" }));
+                      }}
+                      placeholder="jean.dupont@example.com"
+                      autoComplete="email"
+                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
+                        formErrors.billingEmail
+                          ? "border-red-300 bg-red-50"
+                          : "border-sage-200 bg-white"
+                      }`}
+                    />
+                    {formErrors.billingEmail && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                        <AlertTriangle size={12} />
+                        {formErrors.billingEmail}
+                      </p>
+                    )}
+                  </div>
 
-            {/* Adresse de facturation */}
-            <div className="border-2 border-sage-200 bg-white p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <MapPin size={16} className="text-sage-600" />
-                <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                  Adresse de facturation
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs text-stone-500 mb-1">Adresse</label>
-                  <input
-                    type="text"
-                    value={addressLine}
-                    onChange={(e) => setAddressLine(e.target.value)}
-                    placeholder="123 rue Principale"
-                    autoComplete="address-line1"
-                    className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">Ville</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Paris"
-                    autoComplete="address-level2"
-                    className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-stone-500 mb-1">Code postal</label>
-                  <input
-                    type="text"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="75001"
-                    autoComplete="postal-code"
-                    className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs text-stone-500 mb-1">Pays</label>
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    autoComplete="country"
-                    className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-sage-400"
-                  >
-                    <option value="FR">France</option>
-                    <option value="BE">Belgique</option>
-                    <option value="CH">Suisse</option>
-                    <option value="LU">Luxembourg</option>
-                    <option value="DE">Allemagne</option>
-                    <option value="ES">Espagne</option>
-                    <option value="IT">Italie</option>
-                    <option value="GB">Royaume-Uni</option>
-                  </select>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+33 6 12 34 56 78"
+                      autoComplete="tel"
+                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Carte Square */}
-            <div className="border-2 border-sage-200 bg-white p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard size={16} className="text-sage-600" />
-                <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                  Informations de carte
-                </h2>
+              {/* Billing address */}
+              <div className="border-2 border-sage-200 bg-white p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin size={16} className="text-sage-600" />
+                  <h2 className="text-sm uppercase tracking-wider text-sage-700">
+                    Adresse de facturation
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Adresse
+                    </label>
+                    <input
+                      type="text"
+                      value={addressLine}
+                      onChange={(e) => setAddressLine(e.target.value)}
+                      placeholder="123 rue Principale"
+                      autoComplete="address-line1"
+                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Ville
+                    </label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Paris"
+                      autoComplete="address-level2"
+                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Code postal
+                    </label>
+                    <input
+                      type="text"
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder="75001"
+                      autoComplete="postal-code"
+                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-stone-500 mb-1">
+                      Pays
+                    </label>
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      autoComplete="country"
+                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-sage-400"
+                    >
+                      <option value="FR">France</option>
+                      <option value="BE">Belgique</option>
+                      <option value="CH">Suisse</option>
+                      <option value="LU">Luxembourg</option>
+                      <option value="DE">Allemagne</option>
+                      <option value="ES">Espagne</option>
+                      <option value="IT">Italie</option>
+                      <option value="GB">Royaume-Uni</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              {/* Conteneur Square Card — le SDK injecte le formulaire ici */}
-              <div id="square-card-container" className="min-h-25" />
-
-              {!sdkReady && (
-                <div className="flex items-center gap-2 text-xs text-sage-500 mt-2">
-                  <Loader2 size={12} className="animate-spin" />
-                  Chargement du module de paiement…
+              {/* Inline error */}
+              {paymentError && paymentError.retryable && (
+                <div className="border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle
+                      size={16}
+                      className="text-amber-600 mt-0.5 shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-800">
+                        {paymentError.title}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        {paymentError.detail}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
 
-            {/* Erreur retryable (inline) */}
-            {paymentError && (step === "form" || (step === "error" && paymentError.retryable)) && (
-              <div className="border border-amber-200 bg-amber-50 px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle size={16} className="text-amber-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-amber-800">{paymentError.title}</p>
-                    <p className="text-xs text-amber-700 mt-0.5">{paymentError.detail}</p>
-                  </div>
-                  {step === "error" && (
+              <button
+                type="submit"
+                disabled={intentLoading}
+                className="w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-4 text-sm text-white hover:bg-sage-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {intentLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    préparation du paiement…
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={16} />
+                    continuer vers le paiement
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* ── Step 2: Stripe Payment Element ── */}
+          {clientSecret && stripePromise && elementsOptions && (
+            <div className="space-y-6">
+              {/* Retryable error */}
+              {paymentError && paymentError.retryable && (
+                <div className="border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle
+                      size={16}
+                      className="text-amber-600 mt-0.5 shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-800">
+                        {paymentError.title}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        {paymentError.detail}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={handleRetry}
@@ -624,37 +693,24 @@ export default function CheckoutPage() {
                       <RotateCcw size={12} />
                       réessayer
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={step === "processing" || !sdkReady}
-              className="w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-4 text-sm text-white hover:bg-sage-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {step === "processing" ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  traitement en cours…
-                </>
-              ) : (
-                <>
-                  <Lock size={16} />
-                  payer {total.toFixed(2)} €
-                </>
               )}
-            </button>
 
-            <div className="flex items-center justify-center gap-2 text-xs text-stone-400">
-              <ShieldCheck size={14} />
-              <span>Paiement chiffré — propulsé par Square</span>
+              <Elements stripe={stripePromise} options={elementsOptions}>
+                <CheckoutForm
+                  total={total}
+                  orderId={orderId!}
+                  paymentIntentId={paymentIntentId!}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              </Elements>
             </div>
-          </form>
+          )}
         </div>
 
-        {/* Récapitulatif commande */}
+        {/* Right column — Order summary */}
         <div className="lg:col-span-2">
           <div className="border-2 border-sage-200 bg-white p-6 sticky top-24">
             <h2 className="mb-4 text-sm uppercase tracking-wider text-sage-700 border-b border-sage-100 pb-2">
@@ -684,7 +740,9 @@ export default function CheckoutPage() {
                       <p className="text-xs text-stone-700 truncate">
                         {product?.title || `Produit #${item.product_id}`}
                       </p>
-                      <p className="text-xs text-sage-500">x{item.quantity}</p>
+                      <p className="text-xs text-sage-500">
+                        x{item.quantity}
+                      </p>
                     </div>
                     {product?.price != null && (
                       <span className="text-xs font-medium text-stone-700 shrink-0">
@@ -709,7 +767,9 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-stone-800 font-medium border-t border-sage-100 pt-2">
                 <span>Total TTC</span>
-                <span className="text-lg font-light text-sage-800">{total.toFixed(2)} €</span>
+                <span className="text-lg font-light text-sage-800">
+                  {total.toFixed(2)} €
+                </span>
               </div>
             </div>
           </div>

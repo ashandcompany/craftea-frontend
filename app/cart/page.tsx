@@ -394,7 +394,7 @@ export default function CartPage() {
                 </Link>
 
                 <p className="mt-3 text-center text-xs text-stone-400">
-                  Paiement sécurisé par Square
+                  Paiement sécurisé par Stripe
                 </p>
 
                 {/* Garanties */}
