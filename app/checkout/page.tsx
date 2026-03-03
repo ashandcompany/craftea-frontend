@@ -4,12 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import {
@@ -25,23 +20,19 @@ import {
   type Address,
 } from "@/lib/api";
 import { countryToZone, computeShopShipping } from "@/app/cart/page";
-import { assetUrl } from "@/lib/utils";
 import {
   ArrowLeft,
-  Package,
-  Lock,
-  CheckCircle,
   Loader2,
-  CreditCard,
-  ShieldCheck,
   AlertTriangle,
-  XCircle,
   RotateCcw,
-  MapPin,
-  User,
-  Truck,
   Store,
 } from "lucide-react";
+import { BillingContactForm } from "./billing-contact-form";
+import { SavedAddressesList } from "./saved-addresses-list";
+import { AddressForm } from "./address-form";
+import { PaymentForm, type PaymentError } from "./payment-form";
+import { OrderSummary, type CartItem } from "./order-summary";
+import { SuccessScreen, ErrorScreen } from "./checkout-screens";
 
 // ── Stripe publishable key ────────────────────────────────────────────────────
 const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -49,12 +40,6 @@ const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = "form" | "processing" | "success" | "error";
-
-interface PaymentError {
-  title: string;
-  detail: string;
-  retryable: boolean;
-}
 
 function parseApiError(message: string): PaymentError {
   const lower = message.toLowerCase();
@@ -105,124 +90,17 @@ function parseApiError(message: string): PaymentError {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Inner form — rendered inside <Elements> so useStripe() / useElements() work
-// ═══════════════════════════════════════════════════════════════════════════════
-function CheckoutForm({
-  total,
-  orderId,
-  paymentIntentId,
-  onSuccess,
-  onError,
-}: {
-  total: number;
-  orderId: number;
-  paymentIntentId: string;
-  onSuccess: (orderId: number) => void;
-  onError: (err: PaymentError) => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [processing, setProcessing] = useState(false);
-  const [elementReady, setElementReady] = useState(false);
-  const { clear, refresh } = useCart();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-    setProcessing(true);
-
-    try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + "/checkout",
-        },
-        redirect: "if_required",
-      });
-
-      if (error) {
-        onError({
-          title: "Paiement échoué",
-          detail: error.message || "Une erreur est survenue lors du paiement.",
-          retryable:
-            error.type === "card_error" ||
-            error.type === "validation_error",
-        });
-        setProcessing(false);
-        return;
-      }
-
-      // Payment succeeded — confirm on backend & clear/refresh cart
-      await payments.confirm({ payment_intent_id: paymentIntentId });
-      // If per-shop checkout, just refresh the cart (items from other shops stay)
-      // If full checkout, clear
-      await refresh();
-      onSuccess(orderId);
-    } catch (err: any) {
-      onError(parseApiError(err.message || ""));
-      setProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Stripe Payment Element */}
-      <div className="border-2 border-sage-200 bg-white p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <CreditCard size={16} className="text-sage-600" />
-          <h2 className="text-sm uppercase tracking-wider text-sage-700">
-            Informations de paiement
-          </h2>
-        </div>
-        <PaymentElement
-          onReady={() => setElementReady(true)}
-          options={{ layout: "tabs" }}
-        />
-        {!elementReady && (
-          <div className="flex items-center gap-2 text-xs text-sage-500 mt-2">
-            <Loader2 size={12} className="animate-spin" />
-            Chargement du formulaire de paiement…
-          </div>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={processing || !stripe || !elements || !elementReady}
-        className="w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-4 text-sm text-white hover:bg-sage-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {processing ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            traitement en cours…
-          </>
-        ) : (
-          <>
-            <Lock size={16} />
-            payer {total.toFixed(2)} €
-          </>
-        )}
-      </button>
-
-      <div className="flex items-center justify-center gap-2 text-xs text-stone-400">
-        <ShieldCheck size={14} />
-        <span>Paiement sécurisé — propulsé par Stripe</span>
-      </div>
-    </form>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // Main page
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
+        </div>
+      }
+    >
       <CheckoutContent />
     </Suspense>
   );
@@ -420,6 +298,9 @@ function CheckoutContent() {
     if (!givenName.trim()) errors.givenName = "Le prénom est requis.";
     if (!familyName.trim()) errors.familyName = "Le nom est requis.";
     if (!billingEmail.trim()) errors.billingEmail = "L'email est requis.";
+    if (!addressLine.trim()) errors.addressLine = "L'adresse est requise.";
+    if (!city.trim()) errors.city = "La ville est requise.";
+    if (!postalCode.trim()) errors.postalCode = "Le code postal est requis.";
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -505,56 +386,12 @@ function CheckoutContent() {
 
   // ── Success screen ──
   if (step === "success") {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-20 font-mono text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sage-100">
-          <CheckCircle className="h-8 w-8 text-sage-700" />
-        </div>
-        <h1 className="mt-6 text-2xl font-light text-stone-900">
-          Paiement confirmé
-        </h1>
-        <p className="mt-2 text-sm text-sage-600">
-          Votre commande n°{successOrderId} a bien été enregistrée.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/account"
-            className="border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-colors"
-          >
-            voir mes commandes
-          </Link>
-          <Link
-            href="/products"
-            className="border-2 border-sage-200 px-6 py-3 text-sm text-sage-700 hover:border-sage-400 transition-colors"
-          >
-            continuer mes achats
-          </Link>
-        </div>
-      </div>
-    );
+    return <SuccessScreen orderId={successOrderId || 0} />;
   }
 
   // ── Non-retryable error screen ──
   if (step === "error" && paymentError && !paymentError.retryable) {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-20 font-mono text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-          <XCircle className="h-8 w-8 text-red-500" />
-        </div>
-        <h1 className="mt-6 text-2xl font-light text-stone-900">
-          {paymentError.title}
-        </h1>
-        <p className="mt-2 text-sm text-stone-500">{paymentError.detail}</p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/cart"
-            className="border-2 border-sage-200 px-6 py-3 text-sm text-sage-700 hover:border-sage-400 transition-colors"
-          >
-            retour au panier
-          </Link>
-        </div>
-      </div>
-    );
+    return <ErrorScreen title={paymentError.title} detail={paymentError.detail} />;
   }
 
   // ── Main checkout layout ──
@@ -587,241 +424,76 @@ function CheckoutContent() {
           {!clientSecret && (
             <form onSubmit={handleBillingSubmit} className="space-y-6">
               {/* Billing contact */}
-              <div className="border-2 border-sage-200 bg-white p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <User size={16} className="text-sage-600" />
-                  <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                    Informations de facturation
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Prénom *
-                    </label>
-                    <input
-                      type="text"
-                      value={givenName}
-                      onChange={(e) => {
-                        setGivenName(e.target.value);
-                        if (formErrors.givenName)
-                          setFormErrors((p) => ({ ...p, givenName: "" }));
-                      }}
-                      placeholder="Jean"
-                      autoComplete="given-name"
-                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                        formErrors.givenName
-                          ? "border-red-300 bg-red-50"
-                          : "border-sage-200 bg-white"
-                      }`}
-                    />
-                    {formErrors.givenName && (
-                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                        <AlertTriangle size={12} />
-                        {formErrors.givenName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Nom *
-                    </label>
-                    <input
-                      type="text"
-                      value={familyName}
-                      onChange={(e) => {
-                        setFamilyName(e.target.value);
-                        if (formErrors.familyName)
-                          setFormErrors((p) => ({ ...p, familyName: "" }));
-                      }}
-                      placeholder="Dupont"
-                      autoComplete="family-name"
-                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                        formErrors.familyName
-                          ? "border-red-300 bg-red-50"
-                          : "border-sage-200 bg-white"
-                      }`}
-                    />
-                    {formErrors.familyName && (
-                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                        <AlertTriangle size={12} />
-                        {formErrors.familyName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={billingEmail}
-                      onChange={(e) => {
-                        setBillingEmail(e.target.value);
-                        if (formErrors.billingEmail)
-                          setFormErrors((p) => ({ ...p, billingEmail: "" }));
-                      }}
-                      placeholder="jean.dupont@example.com"
-                      autoComplete="email"
-                      className={`w-full border px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400 ${
-                        formErrors.billingEmail
-                          ? "border-red-300 bg-red-50"
-                          : "border-sage-200 bg-white"
-                      }`}
-                    />
-                    {formErrors.billingEmail && (
-                      <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                        <AlertTriangle size={12} />
-                        {formErrors.billingEmail}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+33 6 12 34 56 78"
-                      autoComplete="tel"
-                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                    />
-                  </div>
-                </div>
-              </div>
+              <BillingContactForm
+                givenName={givenName}
+                familyName={familyName}
+                billingEmail={billingEmail}
+                phone={phone}
+                formErrors={formErrors}
+                onGivenNameChange={(value) => {
+                  setGivenName(value);
+                  if (formErrors.givenName) {
+                    setFormErrors((p) => ({ ...p, givenName: "" }));
+                  }
+                }}
+                onFamilyNameChange={(value) => {
+                  setFamilyName(value);
+                  if (formErrors.familyName) {
+                    setFormErrors((p) => ({ ...p, familyName: "" }));
+                  }
+                }}
+                onEmailChange={(value) => {
+                  setBillingEmail(value);
+                  if (formErrors.billingEmail) {
+                    setFormErrors((p) => ({ ...p, billingEmail: "" }));
+                  }
+                }}
+                onPhoneChange={setPhone}
+              />
 
               {/* Saved addresses */}
-              {savedAddresses.length > 0 && (
-                <div className="border-2 border-sage-200 bg-white p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MapPin size={16} className="text-sage-600" />
-                    <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                      Mes adresses
-                    </h2>
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    {savedAddresses.map((addr) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => handleSelectAddress(addr)}
-                        className={`w-full text-left border px-3 py-3 text-xs transition-colors ${
-                          selectedAddressId === addr.id
-                            ? "border-sage-400 bg-sage-50"
-                            : "border-sage-200 bg-white hover:border-sage-300"
-                        }`}
-                      >
-                        <div className="font-medium text-stone-800">
-                          {addr.label || "Adresse sans label"}
-                        </div>
-                        <div className="text-stone-600 mt-1">
-                          {addr.street}
-                        </div>
-                        <div className="text-stone-500">
-                          {addr.postal_code} {addr.city} — {addr.country}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="border-t border-sage-100 pt-4">
-                    <p className="text-xs text-sage-600 mb-3">
-                      Ou remplir une nouvelle adresse :
-                    </p>
-                  </div>
-                </div>
-              )}
+              <SavedAddressesList
+                savedAddresses={savedAddresses}
+                selectedAddressId={selectedAddressId}
+                onSelectAddress={handleSelectAddress}
+                onDeselect={() => {
+                  setSelectedAddressId(null);
+                  setAddressLine("");
+                  setCity("");
+                  setPostalCode("");
+                  setCountryCode("FR");
+                }}
+              />
 
               {/* Billing address */}
-              <div className="border-2 border-sage-200 bg-white p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <MapPin size={16} className="text-sage-600" />
-                  <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                    {savedAddresses.length > 0 && selectedAddressId
-                      ? "Vérifier l'adresse"
-                      : "Adresse de livraison"}
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Adresse
-                    </label>
-                    <input
-                      type="text"
-                      value={addressLine}
-                      onChange={(e) => setAddressLine(e.target.value)}
-                      placeholder="123 rue Principale"
-                      autoComplete="address-line1"
-                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Ville
-                    </label>
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Paris"
-                      autoComplete="address-level2"
-                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Code postal
-                    </label>
-                    <input
-                      type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      placeholder="75001"
-                      autoComplete="postal-code"
-                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none placeholder:text-stone-300 transition-colors focus:border-sage-400"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-stone-500 mb-1">
-                      Pays
-                    </label>
-                    <select
-                      value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
-                      autoComplete="country"
-                      className="w-full border border-sage-200 bg-white px-3 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-sage-400"
-                    >
-                      <option value="FR">France</option>
-                      <option value="BE">Belgique</option>
-                      <option value="CH">Suisse</option>
-                      <option value="LU">Luxembourg</option>
-                      <option value="DE">Allemagne</option>
-                      <option value="ES">Espagne</option>
-                      <option value="IT">Italie</option>
-                      <option value="GB">Royaume-Uni</option>
-                      <option value="US">États-Unis</option>
-                      <option value="CA">Canada</option>
-                      <option value="JP">Japon</option>
-                      <option value="AU">Australie</option>
-                    </select>
-                    <p className="mt-1 text-xs text-sage-500">
-                      Zone de livraison :{" "}
-                      {zone === "france"
-                        ? "France"
-                        : zone === "europe"
-                          ? "Europe"
-                          : "Monde"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <AddressForm
+                addressLine={addressLine}
+                city={city}
+                postalCode={postalCode}
+                countryCode={countryCode}
+                zone={zone}
+                formErrors={formErrors}
+                savedAddressSelected={selectedAddressId !== null}
+                onAddressLineChange={(value) => {
+                  setAddressLine(value);
+                  if (formErrors.addressLine) {
+                    setFormErrors((p) => ({ ...p, addressLine: "" }));
+                  }
+                }}
+                onCityChange={(value) => {
+                  setCity(value);
+                  if (formErrors.city) {
+                    setFormErrors((p) => ({ ...p, city: "" }));
+                  }
+                }}
+                onPostalCodeChange={(value) => {
+                  setPostalCode(value);
+                  if (formErrors.postalCode) {
+                    setFormErrors((p) => ({ ...p, postalCode: "" }));
+                  }
+                }}
+                onCountryCodeChange={setCountryCode}
+              />
 
               {/* Inline error */}
               {paymentError && paymentError.retryable && (
@@ -854,10 +526,7 @@ function CheckoutContent() {
                     préparation du paiement…
                   </>
                 ) : (
-                  <>
-                    <CreditCard size={16} />
-                    continuer vers le paiement
-                  </>
+                  <>continuer vers le paiement</>
                 )}
               </button>
             </form>
@@ -895,7 +564,7 @@ function CheckoutContent() {
               )}
 
               <Elements stripe={stripePromise} options={elementsOptions}>
-                <CheckoutForm
+                <PaymentForm
                   total={grandTotal}
                   orderId={orderId!}
                   paymentIntentId={paymentIntentId!}
@@ -909,131 +578,17 @@ function CheckoutContent() {
 
         {/* Right column — Order summary */}
         <div className="lg:col-span-2">
-          <div className="border-2 border-sage-200 bg-white p-6 sticky top-24">
-            <h2 className="mb-4 text-sm uppercase tracking-wider text-sage-700 border-b border-sage-100 pb-2">
-              récapitulatif
-            </h2>
-
-            {/* Items grouped by shop */}
-            <div className="space-y-4 mb-4">
-              {[...shopGroups.entries()].map(([shopId, shopItems]) => (
-                <div key={shopId}>
-                  {/* Shop name */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <Store size={12} className="text-sage-500" />
-                    <span className="text-xs font-medium text-sage-700">
-                      {shopMap[shopId]?.name || `Boutique #${shopId}`}
-                    </span>
-                  </div>
-
-                  {/* Shop items */}
-                  {shopItems.map((item) => {
-                    const product = productMap[item.product_id];
-                    const image = product?.images?.[0]?.image_url;
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex gap-3 items-center mb-2"
-                      >
-                        <div className="h-12 w-12 shrink-0 border border-sage-200 bg-sage-50 overflow-hidden">
-                          {image ? (
-                            <img
-                              src={assetUrl(image, "product-images")}
-                              alt={product?.title || ""}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-sage-300">
-                              <Package size={16} strokeWidth={1} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-stone-700 truncate">
-                            {product?.title || `Produit #${item.product_id}`}
-                          </p>
-                          <p className="text-xs text-sage-500">
-                            x{item.quantity}
-                          </p>
-                        </div>
-                        {product?.price != null && (
-                          <span className="text-xs font-medium text-stone-700 shrink-0">
-                            {(Number(product.price) * item.quantity).toFixed(2)}{" "}
-                            €
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Shop shipping */}
-                  {(() => {
-                    const enriched = shopItems
-                      .map((i) => ({
-                        product: productMap[i.product_id],
-                        quantity: i.quantity,
-                      }))
-                      .filter((i) => i.product) as {
-                      product: Product;
-                      quantity: number;
-                    }[];
-                    const shopShip = computeShopShipping(
-                      enriched,
-                      shippingProfiles[shopId] || [],
-                      zone,
-                    );
-                    return (
-                      <div className="flex justify-between text-xs text-stone-500 pl-2 mt-1">
-                        <span className="flex items-center gap-1">
-                          <Truck size={10} />
-                          Livraison
-                        </span>
-                        <span
-                          className={
-                            shopShip === 0 ? "text-sage-600 font-medium" : ""
-                          }
-                        >
-                          {shopShip === 0
-                            ? "offerte"
-                            : `${shopShip.toFixed(2)} €`}
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-sage-100 pt-4 space-y-2 text-sm">
-              <div className="flex justify-between text-stone-600">
-                <span>Sous-total</span>
-                <span>{subtotal.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between text-stone-600">
-                <span className="flex items-center gap-1">
-                  <Truck size={12} />
-                  Livraison
-                </span>
-                <span
-                  className={
-                    totalShipping === 0
-                      ? "text-xs text-sage-600 font-medium"
-                      : "text-xs"
-                  }
-                >
-                  {totalShipping === 0
-                    ? "offerte"
-                    : `${totalShipping.toFixed(2)} €`}
-                </span>
-              </div>
-              <div className="flex justify-between text-stone-800 font-medium border-t border-sage-100 pt-2">
-                <span>Total TTC</span>
-                <span className="text-lg font-light text-sage-800">
-                  {grandTotal.toFixed(2)} €
-                </span>
-              </div>
-            </div>
-          </div>
+          <OrderSummary
+            items={checkoutItems as CartItem[]}
+            productMap={productMap}
+            shopMap={shopMap}
+            shippingProfiles={shippingProfiles}
+            subtotal={subtotal}
+            totalShipping={totalShipping}
+            grandTotal={grandTotal}
+            zone={zone}
+            computeShopShipping={computeShopShipping}
+          />
         </div>
       </div>
     </div>
