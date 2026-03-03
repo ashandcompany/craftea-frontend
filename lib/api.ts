@@ -5,6 +5,7 @@ const API_URLS = {
   interaction: process.env.NEXT_PUBLIC_INTERACTION_API || "http://localhost:3004",
   order: process.env.NEXT_PUBLIC_ORDER_API || "http://localhost:3005",
   cart: process.env.NEXT_PUBLIC_CART_API || "http://localhost:3006",
+  payment: process.env.NEXT_PUBLIC_PAYMENT_API || "http://localhost:3007",
 };
 
 function getToken(): string | null {
@@ -443,4 +444,44 @@ export const cart = {
     request<Cart>("cart", `/api/cart/items/${itemId}`, { method: "DELETE" }),
   clear: () =>
     request<Cart>("cart", "/api/cart", { method: "DELETE" }),
+};
+
+// ─── Payments ───────────────────────────────────────────────────────────
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export interface Payment {
+  id: number;
+  user_id: number;
+  order_id?: number;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  idempotency_key: string;
+  square_payment_id?: string;
+  source_id?: string;
+  square_receipt_url?: string;
+  error_detail?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const payments = {
+  create: (data: { order_id?: number; amount: number; currency?: string; source_id: string }) =>
+    request<Payment>("payment", "/api/payments", { method: "POST", body: JSON.stringify(data) }),
+  my: () =>
+    request<Payment[]>("payment", "/api/payments/my"),
+  byOrder: (orderId: number) =>
+    request<Payment[]>("payment", `/api/payments/order/${orderId}`),
+  get: (id: number) =>
+    request<Payment>("payment", `/api/payments/${id}`),
+  refund: (id: number, reason?: string) =>
+    request<Payment>("payment", `/api/payments/${id}/refund`, { method: "POST", body: JSON.stringify({ reason }) }),
+  list: () =>
+    request<Payment[]>("payment", "/api/payments"),
 };

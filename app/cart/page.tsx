@@ -8,7 +8,7 @@ import { useCart } from "@/lib/cart-context";
 import { products as productsApi, type Product } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assetUrl } from "@/lib/utils";
-import { Minus, Plus, ShoppingCart, Trash2, X, ArrowLeft, Package, Truck, Shield, CheckCircle, Sparkle } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, X, ArrowLeft, Package, Truck, Shield, CheckCircle, Sparkle, ArrowRight } from "lucide-react";
 
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth();
@@ -385,15 +385,16 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <button
-                  disabled
-                  className="mt-6 w-full border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-sage-700"
+                <Link
+                  href="/checkout"
+                  className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-all"
                 >
                   passer commande
-                </button>
+                  <ArrowRight size={14} />
+                </Link>
 
                 <p className="mt-3 text-center text-xs text-stone-400">
-                  (paiement sécurisé bientôt disponible)
+                  Paiement sécurisé par Square
                 </p>
 
                 {/* Garanties */}
