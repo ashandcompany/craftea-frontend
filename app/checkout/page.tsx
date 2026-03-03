@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -14,10 +14,15 @@ import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import {
   products as productsApi,
+  shops as shopsApi,
   orders,
   payments,
   type Product,
+  type Shop,
+  type ShopShippingProfile,
+  type ShippingZone,
 } from "@/lib/api";
+import { countryToZone, computeShopShipping } from "@/app/cart/page";
 import { assetUrl } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -32,6 +37,8 @@ import {
   RotateCcw,
   MapPin,
   User,
+  Truck,
+  Store,
 } from "lucide-react";
 
 // ── Stripe publishable key ────────────────────────────────────────────────────
@@ -115,7 +122,7 @@ function CheckoutForm({
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [elementReady, setElementReady] = useState(false);
-  const { clear } = useCart();
+  const { clear, refresh } = useCart();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,9 +151,11 @@ function CheckoutForm({
         return;
       }
 
-      // Payment succeeded — confirm on backend & clear cart
+      // Payment succeeded — confirm on backend & clear/refresh cart
       await payments.confirm({ payment_intent_id: paymentIntentId });
-      await clear();
+      // If per-shop checkout, just refresh the cart (items from other shops stay)
+      // If full checkout, clear
+      await refresh();
       onSuccess(orderId);
     } catch (err: any) {
       onError(parseApiError(err.message || ""));
@@ -206,11 +215,33 @@ function CheckoutForm({
 // Main page
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
   const { user, loading: authLoading } = useAuth();
-  const { items, loading: cartLoading } = useCart();
+  const { items, loading: cartLoading, refresh } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // URL params
+  const countryParam = searchParams.get("country") || "FR";
+  const shopParam = searchParams.get("shop");
+  const filterShopId = shopParam ? parseInt(shopParam, 10) : null;
 
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
+  const [shopMap, setShopMap] = useState<Record<number, Shop>>({});
+  const [shippingProfiles, setShippingProfiles] = useState<
+    Record<number, ShopShippingProfile[]>
+  >({});
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [step, setStep] = useState<Step>("form");
   const [paymentError, setPaymentError] = useState<PaymentError | null>(null);
@@ -230,8 +261,10 @@ export default function CheckoutPage() {
   const [addressLine, setAddressLine] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [countryCode, setCountryCode] = useState("FR");
+  const [countryCode, setCountryCode] = useState(countryParam);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const zone: ShippingZone = countryToZone(countryCode);
 
   // Pre-fill from user profile
   useEffect(() => {
@@ -247,34 +280,112 @@ export default function CheckoutPage() {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
-  // Redirect if cart empty
+  // Redirect if cart empty (only when on form step)
   useEffect(() => {
     if (!cartLoading && items.length === 0 && step === "form") {
       router.push("/cart");
     }
   }, [cartLoading, items, step, router]);
 
-  // Load products
+  // Load products + shops + shipping
   useEffect(() => {
     if (cartLoading || items.length === 0) {
       setLoadingProducts(false);
       return;
     }
-    const ids = [...new Set(items.map((i) => i.product_id))];
-    Promise.allSettled(ids.map((id) => productsApi.get(id))).then((results) => {
-      const map: Record<number, Product> = {};
-      results.forEach((r) => {
-        if (r.status === "fulfilled") map[r.value.id] = r.value;
-      });
-      setProductMap(map);
-      setLoadingProducts(false);
-    });
+    async function loadData() {
+      try {
+        const ids = [...new Set(items.map((i) => i.product_id))];
+        const results = await Promise.allSettled(
+          ids.map((id) => productsApi.get(id)),
+        );
+        const pMap: Record<number, Product> = {};
+        results.forEach((r) => {
+          if (r.status === "fulfilled") pMap[r.value.id] = r.value;
+        });
+        setProductMap(pMap);
+
+        const shopIds = [
+          ...new Set(
+            Object.values(pMap)
+              .map((p) => p.shop_id)
+              .filter(Boolean),
+          ),
+        ];
+
+        if (shopIds.length > 0) {
+          const [shopResults, shippingResult] = await Promise.allSettled([
+            Promise.allSettled(shopIds.map((id) => shopsApi.get(id))),
+            shopsApi.getShippingBulk(shopIds),
+          ]);
+
+          const sMap: Record<number, Shop> = {};
+          if (shopResults.status === "fulfilled") {
+            shopResults.value.forEach((r) => {
+              if (r.status === "fulfilled") sMap[r.value.id] = r.value;
+            });
+          }
+          setShopMap(sMap);
+
+          if (shippingResult.status === "fulfilled") {
+            setShippingProfiles(shippingResult.value);
+          }
+        }
+      } catch {
+        // silent
+      } finally {
+        setLoadingProducts(false);
+      }
+    }
+    loadData();
   }, [items, cartLoading]);
 
-  const total = items.reduce((sum, item) => {
+  // Filter items by shop if per-shop checkout
+  const checkoutItems = useMemo(() => {
+    if (filterShopId === null) return items;
+    return items.filter((item) => {
+      const product = productMap[item.product_id];
+      return product?.shop_id === filterShopId;
+    });
+  }, [items, productMap, filterShopId]);
+
+  // Group items by shop
+  const shopGroups = useMemo(() => {
+    const groups = new Map<number, typeof checkoutItems>();
+    for (const item of checkoutItems) {
+      const product = productMap[item.product_id];
+      const shopId = product?.shop_id ?? 0;
+      if (!groups.has(shopId)) groups.set(shopId, []);
+      groups.get(shopId)!.push(item);
+    }
+    return groups;
+  }, [checkoutItems, productMap]);
+
+  // Compute totals
+  const subtotal = checkoutItems.reduce((sum, item) => {
     const p = productMap[item.product_id];
     return sum + (p ? Number(p.price) * item.quantity : 0);
   }, 0);
+
+  const totalShipping = useMemo(() => {
+    let total = 0;
+    for (const [shopId, shopItems] of shopGroups) {
+      const enriched = shopItems
+        .map((i) => ({
+          product: productMap[i.product_id],
+          quantity: i.quantity,
+        }))
+        .filter((i) => i.product) as { product: Product; quantity: number }[];
+      total += computeShopShipping(
+        enriched,
+        shippingProfiles[shopId] || [],
+        zone,
+      );
+    }
+    return total;
+  }, [shopGroups, productMap, shippingProfiles, zone]);
+
+  const grandTotal = subtotal + totalShipping;
 
   // Create order + PaymentIntent
   const handleBillingSubmit = async (e: React.FormEvent) => {
@@ -293,18 +404,19 @@ export default function CheckoutPage() {
     setIntentLoading(true);
 
     try {
-      // 1. Create the order
-      const orderItems = items.map((item) => ({
+      // 1. Create the order with shipping zone
+      const orderItems = checkoutItems.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
         price: Number(productMap[item.product_id]?.price ?? 0),
       }));
-      const order = await orders.create(orderItems);
+      const shopIds = filterShopId ? [filterShopId] : undefined;
+      const order = await orders.create(orderItems, zone, shopIds);
 
-      // 2. Create Stripe PaymentIntent via our backend
+      // 2. Create Stripe PaymentIntent (total includes shipping)
       const payment = await payments.createIntent({
         order_id: order.id,
-        amount: total,
+        amount: Number(order.total),
         currency: "EUR",
       });
 
@@ -436,6 +548,12 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-light tracking-tight text-stone-900">
           Paiement sécurisé
         </h1>
+        {filterShopId && shopMap[filterShopId] && (
+          <p className="mt-1 text-sm text-sage-600 flex items-center gap-2">
+            <Store size={14} />
+            Commande pour la boutique : {shopMap[filterShopId].name}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-5">
@@ -559,7 +677,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <MapPin size={16} className="text-sage-600" />
                   <h2 className="text-sm uppercase tracking-wider text-sage-700">
-                    Adresse de facturation
+                    Adresse de livraison
                   </h2>
                 </div>
 
@@ -621,7 +739,19 @@ export default function CheckoutPage() {
                       <option value="ES">Espagne</option>
                       <option value="IT">Italie</option>
                       <option value="GB">Royaume-Uni</option>
+                      <option value="US">États-Unis</option>
+                      <option value="CA">Canada</option>
+                      <option value="JP">Japon</option>
+                      <option value="AU">Australie</option>
                     </select>
+                    <p className="mt-1 text-xs text-sage-500">
+                      Zone de livraison :{" "}
+                      {zone === "france"
+                        ? "France"
+                        : zone === "europe"
+                          ? "Europe"
+                          : "Monde"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -699,7 +829,7 @@ export default function CheckoutPage() {
 
               <Elements stripe={stripePromise} options={elementsOptions}>
                 <CheckoutForm
-                  total={total}
+                  total={grandTotal}
                   orderId={orderId!}
                   paymentIntentId={paymentIntentId!}
                   onSuccess={handlePaymentSuccess}
@@ -717,58 +847,122 @@ export default function CheckoutPage() {
               récapitulatif
             </h2>
 
+            {/* Items grouped by shop */}
             <div className="space-y-4 mb-4">
-              {items.map((item) => {
-                const product = productMap[item.product_id];
-                const image = product?.images?.[0]?.image_url;
-                return (
-                  <div key={item.id} className="flex gap-3 items-center">
-                    <div className="h-12 w-12 shrink-0 border border-sage-200 bg-sage-50 overflow-hidden">
-                      {image ? (
-                        <img
-                          src={assetUrl(image, "product-images")}
-                          alt={product?.title || ""}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sage-300">
-                          <Package size={16} strokeWidth={1} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-stone-700 truncate">
-                        {product?.title || `Produit #${item.product_id}`}
-                      </p>
-                      <p className="text-xs text-sage-500">
-                        x{item.quantity}
-                      </p>
-                    </div>
-                    {product?.price != null && (
-                      <span className="text-xs font-medium text-stone-700 shrink-0">
-                        {(Number(product.price) * item.quantity).toFixed(2)} €
-                      </span>
-                    )}
+              {[...shopGroups.entries()].map(([shopId, shopItems]) => (
+                <div key={shopId}>
+                  {/* Shop name */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Store size={12} className="text-sage-500" />
+                    <span className="text-xs font-medium text-sage-700">
+                      {shopMap[shopId]?.name || `Boutique #${shopId}`}
+                    </span>
                   </div>
-                );
-              })}
+
+                  {/* Shop items */}
+                  {shopItems.map((item) => {
+                    const product = productMap[item.product_id];
+                    const image = product?.images?.[0]?.image_url;
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex gap-3 items-center mb-2"
+                      >
+                        <div className="h-12 w-12 shrink-0 border border-sage-200 bg-sage-50 overflow-hidden">
+                          {image ? (
+                            <img
+                              src={assetUrl(image, "product-images")}
+                              alt={product?.title || ""}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sage-300">
+                              <Package size={16} strokeWidth={1} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-stone-700 truncate">
+                            {product?.title || `Produit #${item.product_id}`}
+                          </p>
+                          <p className="text-xs text-sage-500">
+                            x{item.quantity}
+                          </p>
+                        </div>
+                        {product?.price != null && (
+                          <span className="text-xs font-medium text-stone-700 shrink-0">
+                            {(Number(product.price) * item.quantity).toFixed(2)}{" "}
+                            €
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Shop shipping */}
+                  {(() => {
+                    const enriched = shopItems
+                      .map((i) => ({
+                        product: productMap[i.product_id],
+                        quantity: i.quantity,
+                      }))
+                      .filter((i) => i.product) as {
+                      product: Product;
+                      quantity: number;
+                    }[];
+                    const shopShip = computeShopShipping(
+                      enriched,
+                      shippingProfiles[shopId] || [],
+                      zone,
+                    );
+                    return (
+                      <div className="flex justify-between text-xs text-stone-500 pl-2 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Truck size={10} />
+                          Livraison
+                        </span>
+                        <span
+                          className={
+                            shopShip === 0 ? "text-sage-600 font-medium" : ""
+                          }
+                        >
+                          {shopShip === 0
+                            ? "offerte"
+                            : `${shopShip.toFixed(2)} €`}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ))}
             </div>
 
             <div className="border-t border-sage-100 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-stone-600">
                 <span>Sous-total</span>
-                <span>{total.toFixed(2)} €</span>
+                <span>{subtotal.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between text-stone-600">
-                <span>Livraison</span>
-                <span className="text-xs text-sage-600">
-                  {total >= 50 ? "offerte" : "à calculer"}
+                <span className="flex items-center gap-1">
+                  <Truck size={12} />
+                  Livraison
+                </span>
+                <span
+                  className={
+                    totalShipping === 0
+                      ? "text-xs text-sage-600 font-medium"
+                      : "text-xs"
+                  }
+                >
+                  {totalShipping === 0
+                    ? "offerte"
+                    : `${totalShipping.toFixed(2)} €`}
                 </span>
               </div>
               <div className="flex justify-between text-stone-800 font-medium border-t border-sage-100 pt-2">
                 <span>Total TTC</span>
                 <span className="text-lg font-light text-sage-800">
-                  {total.toFixed(2)} €
+                  {grandTotal.toFixed(2)} €
                 </span>
               </div>
             </div>
@@ -778,5 +972,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-

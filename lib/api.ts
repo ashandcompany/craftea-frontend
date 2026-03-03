@@ -157,6 +157,17 @@ export interface Shop {
   updated_at: string;
 }
 
+export type ShippingZone = 'france' | 'europe' | 'world';
+
+export interface ShopShippingProfile {
+  id: number;
+  shop_id: number;
+  zone: ShippingZone;
+  base_fee: number;
+  additional_item_fee: number;
+  free_shipping_threshold: number | null;
+}
+
 export const artists = {
   list: () => request<ArtistProfile[]>("artist", "/api/artists/"),
   get: (id: number) => request<ArtistProfile>("artist", `/api/artists/${id}`),
@@ -192,6 +203,15 @@ export const shops = {
     }),
   delete: (id: number) =>
     request<void>("artist", `/api/shops/${id}`, { method: "DELETE" }),
+  getShipping: (shopId: number) =>
+    request<ShopShippingProfile[]>("artist", `/api/shops/${shopId}/shipping`),
+  updateShipping: (shopId: number, profiles: Omit<ShopShippingProfile, 'id' | 'shop_id'>[]) =>
+    request<ShopShippingProfile[]>("artist", `/api/shops/${shopId}/shipping`, {
+      method: "PUT",
+      body: JSON.stringify({ profiles }),
+    }),
+  getShippingBulk: (shopIds: number[]) =>
+    request<Record<number, ShopShippingProfile[]>>("artist", `/api/shops/shipping/bulk?ids=${shopIds.join(',')}`),
 };
 
 // ─── Catalog ────────────────────────────────────────────────────────────
@@ -207,6 +227,7 @@ export interface Product {
   is_active: boolean;
   creation_time?: number;
   delivery_time?: number;
+  shipping_fee?: number | null;
   images?: ProductImage[];
   tags?: Tag[];
   category?: Category;
@@ -396,14 +417,16 @@ export interface Order {
   user_id: number;
   status: OrderStatus;
   total: number;
+  shipping_total: number;
+  shipping_zone?: string;
   items: OrderItem[];
   created_at: string;
   updated_at: string;
 }
 
 export const orders = {
-  create: (items: { product_id: number; quantity: number; price: number }[]) =>
-    request<Order>("order", "/api/orders", { method: "POST", body: JSON.stringify({ items }) }),
+  create: (items: { product_id: number; quantity: number; price: number }[], shipping_zone?: string, shop_ids?: number[]) =>
+    request<Order>("order", "/api/orders", { method: "POST", body: JSON.stringify({ items, shipping_zone, shop_ids }) }),
   my: () =>
     request<Order[]>("order", "/api/orders/my"),
   artistOrders: () =>

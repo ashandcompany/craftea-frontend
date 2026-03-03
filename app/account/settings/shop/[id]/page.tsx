@@ -13,7 +13,7 @@ import {
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-    Loader, Check, ImageIcon, Store, ArrowLeft, Trash2, Box,
+    Loader, Check, ImageIcon, Store, ArrowLeft, Trash2, Box, Truck,
 } from "lucide-react";
 import { assetUrl } from "@/lib/utils";
 
@@ -152,6 +152,13 @@ export default function ShopDetailPage() {
                             className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
                         >
                             <Box size={12} /> {productCount} produit{productCount > 1 ? "s" : ""}
+                        </Link>
+                        <span className="text-stone-300">|</span>
+                        <Link
+                            href={`/account/settings/shop/${shopId}/shipping`}
+                            className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
+                        >
+                            <Truck size={12} /> frais de port
                         </Link>
                     </div>
                 )}

@@ -1,72 +1,404 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import { products as productsApi, type Product } from "@/lib/api";
+import {
+  products as productsApi,
+  shops as shopsApi,
+  type Product,
+  type Shop,
+  type ShopShippingProfile,
+  type ShippingZone,
+} from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assetUrl } from "@/lib/utils";
-import { Minus, Plus, ShoppingCart, Trash2, X, ArrowLeft, Package, Truck, Shield, CheckCircle, Sparkle, ArrowRight } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  ShoppingCart,
+  Trash2,
+  X,
+  ArrowLeft,
+  Package,
+  Truck,
+  Shield,
+  CheckCircle,
+  Sparkle,
+  ArrowRight,
+  Store,
+  MapPin,
+} from "lucide-react";
 
+// ── Mapping pays → zone ──────────────────────────────────────────────────
+const COUNTRY_ZONE_MAP: Record<string, ShippingZone> = {
+  FR: "france",
+  GP: "france", RE: "france", MQ: "france", GF: "france", YT: "france",
+  BE: "europe", CH: "europe", LU: "europe", DE: "europe", ES: "europe",
+  IT: "europe", GB: "europe", NL: "europe", AT: "europe", PT: "europe",
+  IE: "europe", PL: "europe", SE: "europe", DK: "europe", FI: "europe",
+  NO: "europe", CZ: "europe", GR: "europe", HU: "europe", RO: "europe",
+  BG: "europe", HR: "europe", SK: "europe", SI: "europe", EE: "europe",
+  LV: "europe", LT: "europe",
+};
+
+export function countryToZone(countryCode: string): ShippingZone {
+  return COUNTRY_ZONE_MAP[countryCode] || "world";
+}
+
+// ── Calcul shipping côté client (preview) ────────────────────────────
+export function computeShopShipping(
+  shopItems: { product: Product; quantity: number }[],
+  profiles: ShopShippingProfile[],
+  zone: ShippingZone,
+): number {
+  const profile = profiles.find((p) => p.zone === zone);
+  const baseFee = profile ? Number(profile.base_fee) : 0;
+  const additionalFee = profile ? Number(profile.additional_item_fee) : 0;
+  const freeThreshold =
+    profile?.free_shipping_threshold != null
+      ? Number(profile.free_shipping_threshold)
+      : null;
+
+  const shopSubtotal = shopItems.reduce(
+    (sum, i) => sum + Number(i.product.price ?? 0) * i.quantity,
+    0,
+  );
+
+  if (freeThreshold !== null && shopSubtotal >= freeThreshold) return 0;
+
+  let shipping = 0;
+  let isFirst = true;
+
+  for (const item of shopItems) {
+    const productOverride = item.product.shipping_fee;
+    if (productOverride != null) {
+      shipping += Number(productOverride) * item.quantity;
+    } else {
+      for (let q = 0; q < item.quantity; q++) {
+        if (isFirst) {
+          shipping += baseFee;
+          isFirst = false;
+        } else {
+          shipping += additionalFee;
+        }
+      }
+    }
+  }
+
+  return shipping;
+}
+
+// ── Shop Group Component ──────────────────────────────────────────────
+function ShopGroup({
+  shopId,
+  shopInfo,
+  items,
+  productMap,
+  shippingProfiles,
+  zone,
+  actionLoading,
+  onUpdateQty,
+  onRemove,
+}: {
+  shopId: number;
+  shopInfo: Shop | null;
+  items: { id: number; product_id: number; quantity: number }[];
+  productMap: Record<number, Product>;
+  shippingProfiles: ShopShippingProfile[];
+  zone: ShippingZone;
+  actionLoading: number | null;
+  onUpdateQty: (itemId: number, qty: number) => void;
+  onRemove: (itemId: number) => void;
+}) {
+  const shopItems = items
+    .map((item) => ({
+      ...item,
+      product: productMap[item.product_id],
+    }))
+    .filter((i) => i.product);
+
+  const shopSubtotal = shopItems.reduce(
+    (sum, i) => sum + Number(i.product.price ?? 0) * i.quantity,
+    0,
+  );
+
+  const shopShipping = computeShopShipping(
+    shopItems.map((i) => ({ product: i.product, quantity: i.quantity })),
+    shippingProfiles,
+    zone,
+  );
+
+  const profile = shippingProfiles.find((p) => p.zone === zone);
+  const freeThreshold =
+    profile?.free_shipping_threshold != null
+      ? Number(profile.free_shipping_threshold)
+      : null;
+  const remainingForFree =
+    freeThreshold !== null ? Math.max(0, freeThreshold - shopSubtotal) : null;
+
+  return (
+    <div className="border border-sage-200 bg-white">
+      {/* Shop header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-sage-50/50 border-b border-sage-200">
+        <Store size={16} className="text-sage-600" />
+        <Link
+          href={`/artists/${shopInfo?.artist_id || ""}`}
+          className="text-sm font-medium text-stone-800 hover:text-sage-700 transition-colors"
+        >
+          {shopInfo?.name || `Boutique #${shopId}`}
+        </Link>
+        {shopInfo?.location && (
+          <span className="flex items-center gap-1 text-xs text-sage-500">
+            <MapPin size={10} />
+            {shopInfo.location}
+          </span>
+        )}
+      </div>
+
+      {/* Items */}
+      <div className="divide-y divide-sage-100">
+        {items.map((item) => {
+          const product = productMap[item.product_id];
+          const image = product?.images?.[0]?.image_url;
+          const isLoading = actionLoading === item.id;
+
+          return (
+            <div
+              key={item.id}
+              className={`relative flex flex-col sm:flex-row gap-4 p-4 transition-all hover:bg-sage-50/30 ${
+                isLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                  <div className="h-8 w-8 rounded-full border-2 border-sage-200 border-t-sage-600 animate-spin" />
+                </div>
+              )}
+
+              {/* Image */}
+              <Link
+                href={`/products/${item.product_id}`}
+                className="block h-28 w-28 shrink-0 border border-sage-200 bg-sage-50 overflow-hidden hover:border-sage-300 transition-colors"
+              >
+                {image ? (
+                  <img
+                    src={assetUrl(image, "product-images")}
+                    alt={product?.title || ""}
+                    className="h-full w-full object-cover transition-transform hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sage-400">
+                    <Package size={24} strokeWidth={1} />
+                  </div>
+                )}
+              </Link>
+
+              {/* Infos */}
+              <div className="flex flex-1 flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <Link
+                      href={`/products/${item.product_id}`}
+                      className="text-base font-medium text-stone-800 hover:text-sage-700 transition-colors"
+                    >
+                      {product?.title || `Produit #${item.product_id}`}
+                    </Link>
+                    <button
+                      onClick={() => onRemove(item.id)}
+                      disabled={isLoading}
+                      className="text-sage-400 hover:text-red-500 transition-colors disabled:opacity-30 ml-2"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+
+                  {product?.price != null && (
+                    <p className="mt-1 text-sm text-sage-600">
+                      {Number(product.price).toFixed(2)} € / unité
+                    </p>
+                  )}
+
+                  {product?.shipping_fee != null && (
+                    <p className="mt-1 text-xs text-sage-500">
+                      <Truck size={10} className="inline mr-1" />
+                      Livraison : {Number(product.shipping_fee).toFixed(2)} € / article
+                    </p>
+                  )}
+
+                  {product?.stock != null && product.stock < 5 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      ⚡ Plus que {product.stock} en stock
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 border border-sage-200 p-1">
+                    <button
+                      onClick={() => onUpdateQty(item.id, item.quantity - 1)}
+                      disabled={isLoading || item.quantity <= 1}
+                      className="flex h-8 w-8 items-center justify-center text-sage-600 hover:bg-sage-50 hover:text-sage-800 disabled:opacity-30 transition-colors"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium text-stone-800">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => onUpdateQty(item.id, item.quantity + 1)}
+                      disabled={isLoading || !!(product && item.quantity >= product.stock)}
+                      className="flex h-8 w-8 items-center justify-center text-sage-600 hover:bg-sage-50 hover:text-sage-800 disabled:opacity-30 transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
+                  {product?.price != null && (
+                    <span className="text-lg font-medium text-sage-800">
+                      {(Number(product.price) * item.quantity).toFixed(2)} €
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Shop shipping summary */}
+      <div className="px-4 py-3 bg-sage-50/30 border-t border-sage-200 space-y-1">
+        <div className="flex justify-between text-sm text-stone-600">
+          <span>Sous-total boutique</span>
+          <span className="font-medium">{shopSubtotal.toFixed(2)} €</span>
+        </div>
+        <div className="flex justify-between text-sm text-stone-600">
+          <span className="flex items-center gap-1">
+            <Truck size={12} />
+            Livraison
+          </span>
+          <span className={shopShipping === 0 ? "text-sage-600 font-medium" : ""}>
+            {shopShipping === 0 ? "offerte" : `${shopShipping.toFixed(2)} €`}
+          </span>
+        </div>
+        {remainingForFree !== null && remainingForFree > 0 && (
+          <p className="text-xs text-sage-600 pt-1">
+            Plus que{" "}
+            <span className="font-bold">{remainingForFree.toFixed(2)} €</span>{" "}
+            pour la livraison offerte dans cette boutique
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Main Cart Page
+// ═══════════════════════════════════════════════════════════════════════
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth();
-  const { items, count, loading: cartLoading, updateItem, removeItem, clear } = useCart();
+  const {
+    items,
+    count,
+    loading: cartLoading,
+    updateItem,
+    removeItem,
+    clear,
+  } = useCart();
   const router = useRouter();
 
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
+  const [shopMap, setShopMap] = useState<Record<number, Shop>>({});
+  const [shippingProfiles, setShippingProfiles] = useState<
+    Record<number, ShopShippingProfile[]>
+  >({});
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [clearLoading, setClearLoading] = useState(false);
-  
-  // Notification state
-  const [notification, setNotification] = useState<{ message: string; visible: boolean }>({
-    message: "",
-    visible: false,
-  });
+  const [selectedCountry, setSelectedCountry] = useState("FR");
 
-  // Fonction pour afficher une notification
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    visible: boolean;
+  }>({ message: "", visible: false });
+
   const showNotification = (message: string) => {
     setNotification({ message, visible: true });
     setTimeout(() => {
-      setNotification(prev => ({ ...prev, visible: false }));
+      setNotification((prev) => ({ ...prev, visible: false }));
     }, 3000);
   };
 
+  const zone = countryToZone(selectedCountry);
+
   // Redirect si pas connecté
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
+    if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
-  // Charger les infos produits pour chaque item du panier
+  // Charger les infos produits + boutiques + profils livraison
   useEffect(() => {
     if (cartLoading || items.length === 0) {
       setLoadingProducts(false);
       return;
     }
 
-    async function loadProducts() {
+    async function loadData() {
       try {
+        // 1. Load products
         const productIds = [...new Set(items.map((i) => i.product_id))];
         const results = await Promise.allSettled(
-          productIds.map((id) => productsApi.get(id))
+          productIds.map((id) => productsApi.get(id)),
         );
-        const map: Record<number, Product> = {};
+        const pMap: Record<number, Product> = {};
         results.forEach((r) => {
-          if (r.status === "fulfilled") map[r.value.id] = r.value;
+          if (r.status === "fulfilled") pMap[r.value.id] = r.value;
         });
-        setProductMap(map);
+        setProductMap(pMap);
+
+        // 2. Get unique shop IDs
+        const shopIds = [
+          ...new Set(
+            Object.values(pMap)
+              .map((p) => p.shop_id)
+              .filter(Boolean),
+          ),
+        ];
+
+        // 3. Load shop info + shipping profiles in parallel
+        if (shopIds.length > 0) {
+          const [shopResults, shippingResult] = await Promise.allSettled([
+            Promise.allSettled(shopIds.map((id) => shopsApi.get(id))),
+            shopsApi.getShippingBulk(shopIds),
+          ]);
+
+          // Shop info
+          const sMap: Record<number, Shop> = {};
+          if (shopResults.status === "fulfilled") {
+            shopResults.value.forEach((r) => {
+              if (r.status === "fulfilled") sMap[r.value.id] = r.value;
+            });
+          }
+          setShopMap(sMap);
+
+          // Shipping profiles
+          if (shippingResult.status === "fulfilled") {
+            setShippingProfiles(shippingResult.value);
+          }
+        }
       } catch {
         setError("Erreur lors du chargement des produits");
       } finally {
         setLoadingProducts(false);
       }
     }
-    loadProducts();
+    loadData();
   }, [items, cartLoading]);
 
   const handleUpdateQty = async (itemId: number, newQty: number) => {
@@ -106,27 +438,57 @@ export default function CartPage() {
     }
   };
 
-  const total = items.reduce((sum, item) => {
+  // Grouper les items par shop_id
+  const shopGroups = useMemo(() => {
+    const groups = new Map<number, typeof items>();
+    for (const item of items) {
+      const product = productMap[item.product_id];
+      const shopId = product?.shop_id ?? 0;
+      if (!groups.has(shopId)) groups.set(shopId, []);
+      groups.get(shopId)!.push(item);
+    }
+    return groups;
+  }, [items, productMap]);
+
+  // Calculs totaux
+  const subtotal = items.reduce((sum, item) => {
     const product = productMap[item.product_id];
     if (!product?.price) return sum;
     return sum + Number(product.price) * item.quantity;
   }, 0);
 
-  const loading = authLoading || cartLoading || loadingProducts;
+  const totalShipping = useMemo(() => {
+    let total = 0;
+    for (const [shopId, shopItems] of shopGroups) {
+      const enriched = shopItems
+        .map((i) => ({
+          product: productMap[i.product_id],
+          quantity: i.quantity,
+        }))
+        .filter((i) => i.product);
+      total += computeShopShipping(
+        enriched as { product: Product; quantity: number }[],
+        shippingProfiles[shopId] || [],
+        zone,
+      );
+    }
+    return total;
+  }, [shopGroups, productMap, shippingProfiles, zone]);
 
-  // Calcul pour la livraison gratuite
-  const freeShippingThreshold = 50;
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - total);
-  const shippingProgress = Math.min(100, (total / freeShippingThreshold) * 100);
+  const grandTotal = subtotal + totalShipping;
+
+  const loading = authLoading || cartLoading || loadingProducts;
 
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 font-mono">
         <div className="py-20 text-center">
           <div className="relative inline-flex">
-            <div className="h-12 w-12 rounded-full border-2 border-sage-200 border-t-sage-600 animate-spin"></div>
+            <div className="h-12 w-12 rounded-full border-2 border-sage-200 border-t-sage-600 animate-spin" />
           </div>
-          <p className="mt-4 text-sm text-sage-600 animate-pulse">chargement du panier...</p>
+          <p className="mt-4 text-sm text-sage-600 animate-pulse">
+            chargement du panier...
+          </p>
         </div>
       </div>
     );
@@ -139,8 +501,8 @@ export default function CartPage() {
       {/* Notification flottante */}
       <div
         className={`fixed top-4 right-4 z-50 transform transition-all duration-300 ${
-          notification.visible 
-            ? "translate-y-0 opacity-100" 
+          notification.visible
+            ? "translate-y-0 opacity-100"
             : "-translate-y-2 opacity-0 pointer-events-none"
         }`}
       >
@@ -154,7 +516,9 @@ export default function CartPage() {
             <p className="text-sm text-stone-700">{notification.message}</p>
           </div>
           <button
-            onClick={() => setNotification(prev => ({ ...prev, visible: false }))}
+            onClick={() =>
+              setNotification((prev) => ({ ...prev, visible: false }))
+            }
             className="shrink-0 text-stone-400 hover:text-stone-600 transition-colors"
           >
             <X size={16} />
@@ -162,16 +526,16 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Header avec breadcrumb */}
+      {/* Header */}
       <div className="mb-8 sm:mb-12">
-        <Link 
-          href="/products" 
+        <Link
+          href="/products"
           className="inline-flex items-center gap-2 text-xs text-sage-600 hover:text-sage-800 mb-4 transition-colors"
         >
           <ArrowLeft size={14} />
           <span>continuer mes achats</span>
         </Link>
-        
+
         <div className="border-b border-sage-200 pb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-stone-900">
@@ -179,14 +543,15 @@ export default function CartPage() {
             </h1>
             {count > 0 && (
               <span className="rounded-full bg-sage-100 px-3 py-1 text-xs text-sage-700">
-                {count} article{count > 1 ? "s" : ""}
+                {count} article{count > 1 ? "s" : ""} ·{" "}
+                {shopGroups.size} boutique{shopGroups.size > 1 ? "s" : ""}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Messages d'erreur seulement */}
+      {/* Messages d'erreur */}
       {error && (
         <Alert className="mb-6 rounded-none border border-red-200 bg-red-50 font-mono">
           <AlertDescription className="text-red-700 flex items-center gap-2">
@@ -216,111 +581,22 @@ export default function CartPage() {
         </div>
       ) : (
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Liste des items */}
-          <div className="space-y-4 lg:col-span-2">
-            {items.map((item) => {
-              const product = productMap[item.product_id];
-              const image = product?.images?.[0]?.image_url;
-              const isLoading = actionLoading === item.id;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`group relative flex flex-col sm:flex-row gap-4 border border-sage-200 bg-white p-4 transition-all hover:border-sage-400 hover:shadow-md ${
-                    isLoading ? "opacity-50 pointer-events-none" : ""
-                  }`}
-                >
-                  {/* Badge de chargement */}
-                  {isLoading && (
-                    <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                      <div className="h-8 w-8 rounded-full border-2 border-sage-200 border-t-sage-600 animate-spin"></div>
-                    </div>
-                  )}
-
-                  {/* Image */}
-                  <Link
-                    href={`/products/${item.product_id}`}
-                    className="block h-32 w-32 sm:h-28 sm:w-28 shrink-0 border border-sage-200 bg-sage-50 overflow-hidden group-hover:border-sage-300 transition-colors"
-                  >
-                    {image ? (
-                      <img
-                        src={assetUrl(image, "product-images")}
-                        alt={product?.title || ""}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-sage-400">
-                        <Package size={24} strokeWidth={1} />
-                      </div>
-                    )}
-                  </Link>
-
-                  {/* Infos */}
-                  <div className="flex flex-1 flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <Link
-                          href={`/products/${item.product_id}`}
-                          className="text-base font-medium text-stone-800 hover:text-sage-700 transition-colors"
-                        >
-                          {product?.title || `Produit #${item.product_id}`}
-                        </Link>
-                        <button
-                          onClick={() => handleRemove(item.id)}
-                          disabled={isLoading}
-                          className="text-sage-400 hover:text-red-500 transition-colors disabled:opacity-30 ml-2"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                      
-                      {product?.price != null && (
-                        <p className="mt-1 text-sm text-sage-600">
-                          {Number(product.price).toFixed(2)} € / unité
-                        </p>
-                      )}
-
-                      {product?.stock && product.stock < 5 && (
-                        <p className="mt-1 text-xs text-amber-600">
-                          ⚡ Plus que {product.stock} en stock
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      {/* Quantité */}
-                      <div className="flex items-center gap-2 border border-sage-200 p-1">
-                        <button
-                          onClick={() => handleUpdateQty(item.id, item.quantity - 1)}
-                          disabled={isLoading || item.quantity <= 1}
-                          className="flex h-8 w-8 items-center justify-center text-sage-600 hover:bg-sage-50 hover:text-sage-800 disabled:opacity-30 transition-colors"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="w-8 text-center text-sm font-medium text-stone-800">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
-                          disabled={isLoading || (product && item.quantity >= product.stock)}
-                          className="flex h-8 w-8 items-center justify-center text-sage-600 hover:bg-sage-50 hover:text-sage-800 disabled:opacity-30 transition-colors"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-
-                      {/* Prix ligne */}
-                      {product?.price != null && (
-                        <span className="text-lg font-medium text-sage-800">
-                          {(Number(product.price) * item.quantity).toFixed(2)} €
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          {/* Liste des items groupés par boutique */}
+          <div className="space-y-6 lg:col-span-2">
+            {[...shopGroups.entries()].map(([shopId, shopItems]) => (
+              <ShopGroup
+                key={shopId}
+                shopId={shopId}
+                shopInfo={shopMap[shopId] || null}
+                items={shopItems}
+                productMap={productMap}
+                shippingProfiles={shippingProfiles[shopId] || []}
+                zone={zone}
+                actionLoading={actionLoading}
+                onUpdateQty={handleUpdateQty}
+                onRemove={handleRemove}
+              />
+            ))}
 
             {/* Actions du panier */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-sage-200">
@@ -329,7 +605,7 @@ export default function CartPage() {
                 className="flex items-center gap-2 text-sm text-sage-600 hover:text-sage-800 transition-colors"
               >
                 <ArrowLeft size={14} />
-                <span>ajouter d'autres articles</span>
+                <span>ajouter d&apos;autres articles</span>
               </Link>
 
               <button
@@ -345,22 +621,44 @@ export default function CartPage() {
 
           {/* Récapitulatif */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              {/* Barre de progression livraison gratuite */}
-              {total < freeShippingThreshold && (
-                <div className="mb-4 p-4 bg-sage-50 border border-sage-200">
-                  <p className="text-xs text-sage-700 mb-2">
-                    Plus que <span className="font-bold">{remainingForFreeShipping.toFixed(2)} €</span> pour la livraison offerte
-                  </p>
-                  <div className="h-1 bg-sage-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-sage-600 transition-all duration-500"
-                      style={{ width: `${shippingProgress}%` }}
-                    />
-                  </div>
+            <div className="sticky top-24 space-y-4">
+              {/* Zone de livraison */}
+              <div className="border-2 border-sage-200 bg-white p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin size={14} className="text-sage-600" />
+                  <h3 className="text-xs uppercase tracking-wider text-sage-700">
+                    Livraison vers
+                  </h3>
                 </div>
-              )}
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  className="w-full border border-sage-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none transition-colors focus:border-sage-400"
+                >
+                  <option value="FR">France</option>
+                  <option value="BE">Belgique</option>
+                  <option value="CH">Suisse</option>
+                  <option value="LU">Luxembourg</option>
+                  <option value="DE">Allemagne</option>
+                  <option value="ES">Espagne</option>
+                  <option value="IT">Italie</option>
+                  <option value="GB">Royaume-Uni</option>
+                  <option value="US">États-Unis</option>
+                  <option value="CA">Canada</option>
+                  <option value="JP">Japon</option>
+                  <option value="AU">Australie</option>
+                </select>
+                <p className="mt-1 text-xs text-sage-500">
+                  Zone :{" "}
+                  {zone === "france"
+                    ? "France"
+                    : zone === "europe"
+                      ? "Europe"
+                      : "Monde"}
+                </p>
+              </div>
 
+              {/* Récapitulatif */}
               <div className="border-2 border-sage-200 bg-white p-6">
                 <h2 className="mb-4 text-sm uppercase tracking-wider text-sage-700 border-b border-sage-100 pb-2">
                   récapitulatif
@@ -368,30 +666,131 @@ export default function CartPage() {
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between text-stone-600">
-                    <span>Sous-total</span>
-                    <span className="font-medium">{total.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between text-stone-600">
-                    <span>Livraison</span>
-                    <span className={`text-xs ${total >= 50 ? 'text-sage-600' : 'text-stone-400'}`}>
-                      {total >= 50 ? "offerte" : "à calculer"}
+                    <span>Sous-total articles</span>
+                    <span className="font-medium">
+                      {subtotal.toFixed(2)} €
                     </span>
                   </div>
+
+                  {/* Frais par boutique */}
+                  {[...shopGroups.entries()].map(([shopId, shopItems]) => {
+                    const enriched = shopItems
+                      .map((i) => ({
+                        product: productMap[i.product_id],
+                        quantity: i.quantity,
+                      }))
+                      .filter((i) => i.product) as {
+                      product: Product;
+                      quantity: number;
+                    }[];
+                    const shopShipping = computeShopShipping(
+                      enriched,
+                      shippingProfiles[shopId] || [],
+                      zone,
+                    );
+                    return (
+                      <div
+                        key={shopId}
+                        className="flex justify-between text-stone-500 text-xs pl-2"
+                      >
+                        <span className="flex items-center gap-1">
+                          <Truck size={10} />
+                          {shopMap[shopId]?.name || `Boutique #${shopId}`}
+                        </span>
+                        <span
+                          className={
+                            shopShipping === 0
+                              ? "text-sage-600 font-medium"
+                              : ""
+                          }
+                        >
+                          {shopShipping === 0
+                            ? "offerte"
+                            : `${shopShipping.toFixed(2)} €`}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex justify-between text-stone-600">
+                    <span className="flex items-center gap-1">
+                      <Truck size={12} />
+                      Livraison totale
+                    </span>
+                    <span
+                      className={
+                        totalShipping === 0
+                          ? "text-sage-600 font-medium"
+                          : "font-medium"
+                      }
+                    >
+                      {totalShipping === 0
+                        ? "offerte"
+                        : `${totalShipping.toFixed(2)} €`}
+                    </span>
+                  </div>
+
                   <div className="flex justify-between text-stone-600 border-t border-sage-100 pt-3">
                     <span className="font-medium">Total TTC</span>
                     <span className="text-xl font-light text-sage-800">
-                      {total.toFixed(2)} €
+                      {grandTotal.toFixed(2)} €
                     </span>
                   </div>
                 </div>
 
+                {/* Checkout tout le panier */}
                 <Link
-                  href="/checkout"
+                  href={`/checkout?country=${selectedCountry}`}
                   className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-all"
                 >
-                  passer commande
+                  commander tout le panier
                   <ArrowRight size={14} />
                 </Link>
+
+                {/* Checkout par boutique (si plus d'une boutique) */}
+                {shopGroups.size > 1 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs text-sage-500 text-center">
+                      — ou commander par boutique —
+                    </p>
+                    {[...shopGroups.entries()].map(([shopId, shopItems]) => {
+                      const enriched = shopItems
+                        .map((i) => ({
+                          product: productMap[i.product_id],
+                          quantity: i.quantity,
+                        }))
+                        .filter((i) => i.product) as {
+                        product: Product;
+                        quantity: number;
+                      }[];
+                      const shopSub = enriched.reduce(
+                        (s, i) =>
+                          s + Number(i.product.price ?? 0) * i.quantity,
+                        0,
+                      );
+                      const shopShip = computeShopShipping(
+                        enriched,
+                        shippingProfiles[shopId] || [],
+                        zone,
+                      );
+                      return (
+                        <Link
+                          key={shopId}
+                          href={`/checkout?country=${selectedCountry}&shop=${shopId}`}
+                          className="w-full flex items-center justify-between gap-2 border border-sage-200 px-4 py-2.5 text-xs text-sage-700 hover:border-sage-400 hover:bg-sage-50 transition-all"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Store size={12} />
+                            {shopMap[shopId]?.name || `Boutique #${shopId}`}
+                          </span>
+                          <span className="font-medium">
+                            {(shopSub + shopShip).toFixed(2)} €
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <p className="mt-3 text-center text-xs text-stone-400">
                   Paiement sécurisé par Stripe
@@ -401,7 +800,7 @@ export default function CartPage() {
                 <div className="mt-6 pt-4 border-t border-sage-100 space-y-2">
                   <div className="flex items-center gap-2 text-xs text-sage-600">
                     <Truck size={14} />
-                    <span>Livraison offerte dès 50€</span>
+                    <span>Frais de port calculés par boutique</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-sage-600">
                     <Shield size={14} />
@@ -410,15 +809,19 @@ export default function CartPage() {
                 </div>
               </div>
 
-              {/* Produits recommandés (optionnel) */}
-              <div className="mt-6 p-4 bg-sage-50/50 border border-sage-200">
-                <p className="text-xs text-sage-700 mb-2 flex items-center gap-3"><Sparkle width={10} /> Vous aimerez aussi</p>
-                <Link 
+              {/* Suggestion */}
+              <div className="p-4 bg-sage-50/50 border border-sage-200">
+                <p className="text-xs text-sage-700 mb-2 flex items-center gap-3">
+                  <Sparkle width={10} /> Vous aimerez aussi
+                </p>
+                <Link
                   href="/products?category=featured"
                   className="text-sm text-sage-600 hover:text-sage-800 flex items-center justify-between group"
                 >
                   <span>Découvrir nos sélections</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
                 </Link>
               </div>
             </div>
