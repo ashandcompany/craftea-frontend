@@ -8,6 +8,7 @@ import {
   shops as shopsApi,
   type Shop,
   type ShopShippingProfile,
+  type ShopShippingMethod,
   type ShippingZone,
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +20,8 @@ import {
   Truck,
   AlertTriangle,
   Info,
+  Plus,
+  X,
 } from "lucide-react";
 
 type ShippingZoneLabel = "france" | "europe" | "world";
@@ -64,15 +67,30 @@ export default function ShopShippingPage() {
     world: { base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
   });
 
+  // Shipping methods (modes de livraison)
+  type MethodForm = {
+    id?: number;
+    name: string;
+    zones: string[];
+    delivery_time_min: string;
+    delivery_time_max: string;
+    delivery_time_unit: 'days' | 'weeks';
+  };
+  const [methods, setMethods] = useState<MethodForm[]>([]);
+  const [methodsSaving, setMethodsSaving] = useState(false);
+  const [methodsSaved, setMethodsSaved] = useState(false);
+  const [methodsError, setMethodsError] = useState("");
+
   // Load shop and shipping profiles
   useEffect(() => {
     if (!user || user.role !== "artist" || !shopId) return;
 
     const load = async () => {
       try {
-        const [shopData, shippingData] = await Promise.all([
+        const [shopData, shippingData, methodsData] = await Promise.all([
           shopsApi.get(shopId),
           shopsApi.getShipping(shopId),
+          shopsApi.getShippingMethods(shopId),
         ]);
 
         setShop(shopData);
@@ -114,6 +132,20 @@ export default function ShopShippingPage() {
         }
 
         setFormData(newForm);
+
+        // Populate shipping methods
+        if (methodsData && Array.isArray(methodsData)) {
+          setMethods(
+            methodsData.map((m) => ({
+              id: m.id,
+              name: m.name,
+              zones: m.zones,
+              delivery_time_min: m.delivery_time_min != null ? String(m.delivery_time_min) : "",
+              delivery_time_max: m.delivery_time_max != null ? String(m.delivery_time_max) : "",
+              delivery_time_unit: m.delivery_time_unit || 'days',
+            }))
+          );
+        }
       } catch (err: any) {
         setError(err.message || "Erreur lors du chargement");
       } finally {
@@ -165,6 +197,65 @@ export default function ShopShippingPage() {
       setError(err.message || "Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ─── Shipping methods handlers ───────────────────────────────────────
+
+  const addMethod = () => {
+    setMethods((prev) => [
+      ...prev,
+      { name: "", zones: ["france"], delivery_time_min: "", delivery_time_max: "", delivery_time_unit: "days" as const },
+    ]);
+    setMethodsSaved(false);
+  };
+
+  const removeMethod = (index: number) => {
+    setMethods((prev) => prev.filter((_, i) => i !== index));
+    setMethodsSaved(false);
+  };
+
+  const updateMethod = (index: number, field: string, value: any) => {
+    setMethods((prev) =>
+      prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
+    );
+    setMethodsSaved(false);
+  };
+
+  const toggleMethodZone = (index: number, zone: string) => {
+    setMethods((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        const zones = m.zones.includes(zone)
+          ? m.zones.filter((z) => z !== zone)
+          : [...m.zones, zone];
+        return { ...m, zones: zones.length > 0 ? zones : [zone] };
+      })
+    );
+    setMethodsSaved(false);
+  };
+
+  const handleSaveMethods = async () => {
+    setMethodsError("");
+    setMethodsSaving(true);
+
+    try {
+      const payload = methods.map((m) => ({
+        ...(m.id ? { id: m.id } : {}),
+        name: m.name,
+        zones: m.zones,
+        delivery_time_min: m.delivery_time_min ? parseInt(m.delivery_time_min, 10) : null,
+        delivery_time_max: m.delivery_time_max ? parseInt(m.delivery_time_max, 10) : null,
+        delivery_time_unit: m.delivery_time_unit,
+      }));
+
+      await shopsApi.updateShippingMethods(shopId, payload);
+      setMethodsSaved(true);
+      setTimeout(() => setMethodsSaved(false), 2000);
+    } catch (err: any) {
+      setMethodsError(err.message || "Erreur lors de la sauvegarde");
+    } finally {
+      setMethodsSaving(false);
     }
   };
 
@@ -364,6 +455,179 @@ export default function ShopShippingPage() {
           {saved && <Check size={14} />}
           {saving ? "enregistrement..." : saved ? "sauvegardé" : "enregistrer"}
         </button>
+      </div>
+
+      {/* ─── Shipping Methods (Modes de livraison) ─────────────────── */}
+      <div className="mt-12 border-t border-stone-200 pt-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Truck className="text-sage-600" size={20} />
+            <h2 className="text-xl font-light tracking-tight text-stone-900">
+              Modes de livraison
+            </h2>
+          </div>
+          <button
+            onClick={addMethod}
+            className="flex items-center gap-1 border border-stone-800 bg-stone-800 px-3 py-1.5 text-xs text-stone-50 hover:bg-stone-700"
+          >
+            <Plus size={14} /> ajouter
+          </button>
+        </div>
+
+        {/* Info box */}
+        <div className="mb-6 border border-blue-200 bg-blue-50 p-4">
+          <div className="flex gap-3">
+            <Info className="flex-shrink-0 text-blue-600 mt-0.5" size={16} />
+            <div className="text-xs text-blue-900">
+              <p className="font-medium mb-1">Modes de livraison</p>
+              <p className="text-blue-800">
+                Configurez les transporteurs que vous proposez, les zones desservies et
+                le délai de livraison estimé. Ces informations seront affichées sur
+                vos fiches produit.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {methodsError && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertTriangle className="text-red-600" size={16} />
+            <AlertDescription className="text-red-700 text-sm">{methodsError}</AlertDescription>
+          </Alert>
+        )}
+
+        {methods.length === 0 ? (
+          <div className="border border-dashed border-stone-200 py-10 text-center">
+            <Truck className="mx-auto mb-2 text-stone-300" size={28} strokeWidth={1} />
+            <p className="text-sm text-stone-400 italic">— aucun mode de livraison —</p>
+            <button
+              onClick={addMethod}
+              className="mt-3 inline-flex items-center gap-1 border border-stone-800 bg-stone-800 px-3 py-1.5 text-xs text-stone-50 hover:bg-stone-700"
+            >
+              <Plus size={14} /> ajouter un mode
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {methods.map((method, index) => (
+              <div
+                key={index}
+                className="border border-stone-200 rounded-lg overflow-hidden"
+              >
+                {/* Method header */}
+                <div className="flex items-center justify-between bg-stone-50 border-b border-stone-200 px-4 py-2.5">
+                  <span className="text-xs uppercase tracking-wider text-stone-400">
+                    mode #{index + 1}
+                  </span>
+                  <button
+                    onClick={() => removeMethod(index)}
+                    className="text-stone-400 hover:text-red-500"
+                    title="Supprimer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="text-sm font-medium text-stone-700 block mb-1">
+                      Nom du transporteur
+                    </label>
+                    <input
+                      type="text"
+                      value={method.name}
+                      onChange={(e) => updateMethod(index, "name", e.target.value)}
+                      placeholder="ex : Lettre suivie, Colissimo, Mondial Relay..."
+                      className="w-full border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:border-stone-400 bg-white"
+                    />
+                  </div>
+
+                  {/* Zones */}
+                  <div>
+                    <label className="text-sm font-medium text-stone-700 block mb-2">
+                      Zones desservies
+                    </label>
+                    <div className="flex gap-2">
+                      {(["france", "europe", "world"] as const).map((zone) => (
+                        <button
+                          key={zone}
+                          type="button"
+                          onClick={() => toggleMethodZone(index, zone)}
+                          className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${
+                            method.zones.includes(zone)
+                              ? "border border-stone-800 bg-stone-800 text-stone-50"
+                              : "border border-stone-200 text-stone-500 hover:border-stone-400"
+                          }`}
+                        >
+                          {zone === "france" ? "France" : zone === "europe" ? "Europe" : "Monde"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Delivery time */}
+                  <div>
+                    <label className="text-sm font-medium text-stone-700 block mb-2">
+                      Délai de livraison estimé
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-stone-400 block mb-1">min</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={method.delivery_time_min}
+                          onChange={(e) => updateMethod(index, "delivery_time_min", e.target.value)}
+                          placeholder="—"
+                          className="w-full border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:border-stone-400 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-stone-400 block mb-1">max</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={method.delivery_time_max}
+                          onChange={(e) => updateMethod(index, "delivery_time_max", e.target.value)}
+                          placeholder="—"
+                          className="w-full border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:border-stone-400 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-stone-400 block mb-1">unité</label>
+                        <div className="relative">
+                          <select
+                            value={method.delivery_time_unit}
+                            onChange={(e) => updateMethod(index, "delivery_time_unit", e.target.value)}
+                            className="w-full appearance-none border border-stone-200 px-3 py-2 pr-8 text-sm focus:outline-none focus:border-stone-400 bg-white"
+                          >
+                            <option value="days">jours</option>
+                            <option value="weeks">semaines</option>
+                          </select>
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">▼</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Save methods button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleSaveMethods}
+            disabled={methodsSaving || methodsSaved}
+            className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-6 py-2 text-sm text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+          >
+            {methodsSaving && <Loader size={14} className="animate-spin" />}
+            {methodsSaved && <Check size={14} />}
+            {methodsSaving ? "enregistrement..." : methodsSaved ? "sauvegardé" : "enregistrer les modes"}
+          </button>
+        </div>
       </div>
     </div>
   );

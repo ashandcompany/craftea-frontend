@@ -30,7 +30,9 @@ type ProductFormData = {
   processing_time_min: string;
   processing_time_max: string;
   processing_time_unit: 'days' | 'weeks';
-  delivery_time: string;
+  delivery_time_min: string;
+  delivery_time_max: string;
+  delivery_time_unit: 'days' | 'weeks';
   tags: number[];
 };
 
@@ -44,7 +46,9 @@ const emptyForm: ProductFormData = {
   processing_time_min: "",
   processing_time_max: "",
   processing_time_unit: 'days',
-  delivery_time: "",
+  delivery_time_min: "",
+  delivery_time_max: "",
+  delivery_time_unit: 'days',
   tags: [],
 };
 
@@ -154,7 +158,9 @@ export default function AccountProductsPage() {
         processing_time_min: product.processing_time_min != null ? String(product.processing_time_min) : "",
         processing_time_max: product.processing_time_max != null ? String(product.processing_time_max) : "",
         processing_time_unit: product.processing_time_unit || 'days',
-        delivery_time: product.delivery_time != null ? String(product.delivery_time) : "",
+        delivery_time_min: product.delivery_time_min != null ? String(product.delivery_time_min) : "",
+        delivery_time_max: product.delivery_time_max != null ? String(product.delivery_time_max) : "",
+        delivery_time_unit: product.delivery_time_unit || 'days',
         tags: product.tags?.map((t) => t.id) || [],
       });
     } else {
@@ -213,7 +219,9 @@ export default function AccountProductsPage() {
         processing_time_min: form.processing_time_min ? parseInt(form.processing_time_min, 10) : undefined,
         processing_time_max: form.processing_time_max ? parseInt(form.processing_time_max, 10) : undefined,
         processing_time_unit: (form.processing_time_min || form.processing_time_max) ? form.processing_time_unit : undefined,
-        delivery_time: form.delivery_time ? parseInt(form.delivery_time, 10) : undefined,
+        delivery_time_min: form.delivery_time_min ? parseInt(form.delivery_time_min, 10) : undefined,
+        delivery_time_max: form.delivery_time_max ? parseInt(form.delivery_time_max, 10) : undefined,
+        delivery_time_unit: (form.delivery_time_min || form.delivery_time_max) ? form.delivery_time_unit : undefined,
         tags: form.tags.length > 0 ? form.tags : undefined,
       };
 
@@ -863,17 +871,49 @@ export default function AccountProductsPage() {
                 </div>
               </div>
 
-              {/* Delivery time */}
-              <div className="space-y-1">
-                <label className="text-xs uppercase tracking-wider text-stone-400">livraison (jours)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.delivery_time}
-                  onChange={(e) => setForm((f) => ({ ...f, delivery_time: e.target.value }))}
-                  placeholder="—"
-                  className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
-                />
+              {/* Delivery time override */}
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-wider text-stone-400">
+                  délai de livraison <span className="normal-case text-stone-300">— optionnel, remplace celui de la boutique</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-stone-400">min</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.delivery_time_min}
+                      onChange={(e) => setForm((f) => ({ ...f, delivery_time_min: e.target.value }))}
+                      placeholder="—"
+                      className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-stone-400">max</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.delivery_time_max}
+                      onChange={(e) => setForm((f) => ({ ...f, delivery_time_max: e.target.value }))}
+                      placeholder="—"
+                      className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-stone-400">unité</label>
+                    <div className="relative">
+                      <select
+                        value={form.delivery_time_unit}
+                        onChange={(e) => setForm((f) => ({ ...f, delivery_time_unit: e.target.value as 'days' | 'weeks' }))}
+                        className="w-full appearance-none border border-stone-200 bg-white px-3 py-2 pr-8 text-sm text-stone-800 outline-none focus:border-stone-600"
+                      >
+                        <option value="days">jours</option>
+                        <option value="weeks">semaines</option>
+                      </select>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">▼</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Tags */}

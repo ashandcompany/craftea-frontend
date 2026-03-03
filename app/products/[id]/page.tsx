@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { products, reviews, favorites, type Product, type Review } from "@/lib/api";
+import { products, reviews, favorites, shops as shopsApi, type Product, type Review, type ShopShippingMethod } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { assetUrl } from "@/lib/utils";
-import { Hourglass } from "lucide-react";
+import { Hourglass, Truck } from "lucide-react";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +21,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
+  const [shippingMethods, setShippingMethods] = useState<ShopShippingMethod[]>([]);
 
   // Cart
   const [qty, setQty] = useState(1);
@@ -54,6 +55,11 @@ export default function ProductDetailPage() {
         setProduct(p);
         setProductReviews(rev.data);
         setAvgRating(avg);
+
+        // Load shop shipping methods
+        if (p.shop_id) {
+          shopsApi.getShippingMethods(p.shop_id).then(setShippingMethods).catch(() => {});
+        }
 
         if (user) {
           const fav = await favorites.check(Number(id)).catch(() => ({ isFavorite: false }));
@@ -293,13 +299,48 @@ export default function ProductDetailPage() {
                 </p>
               </div>
             )}
-            {product.delivery_time && (
+            {(product.delivery_time_min || product.delivery_time_max) ? (
               <div>
                 <p className="text-xs uppercase tracking-wider text-stone-400">livraison</p>
-                <p className="text-sm text-stone-700">{product.delivery_time} jours</p>
+                <p className="text-sm text-stone-700">
+                  {product.delivery_time_min && product.delivery_time_max
+                    ? `${product.delivery_time_min} \u2013 ${product.delivery_time_max}`
+                    : product.delivery_time_min
+                    ? `\u00e0 partir de ${product.delivery_time_min}`
+                    : `jusqu'\u00e0 ${product.delivery_time_max}`}
+                  {' '}{product.delivery_time_unit === 'weeks' ? 'semaines' : 'jours'}
+                </p>
               </div>
-            )}
+            ) : null}
           </div>
+
+          {/* Shipping methods from shop */}
+          {shippingMethods.length > 0 && !product.delivery_time_min && !product.delivery_time_max && (
+            <div className="border-t border-stone-200 pt-4 space-y-2">
+              <p className="text-xs uppercase tracking-wider text-stone-400">livraison</p>
+              <div className="space-y-1.5">
+                {shippingMethods.map((method) => (
+                  <div key={method.id} className="flex items-center gap-2 text-sm text-stone-700">
+                    <Truck className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                    <span className="font-medium">{method.name}</span>
+                    <span className="text-stone-400 text-xs">
+                      ({method.zones.map(z => z === 'france' ? 'France' : z === 'europe' ? 'Europe' : 'Monde').join(', ')})
+                    </span>
+                    {(method.delivery_time_min || method.delivery_time_max) && (
+                      <span className="text-xs text-stone-500 ml-auto">
+                        {method.delivery_time_min && method.delivery_time_max
+                          ? `${method.delivery_time_min}\u2013${method.delivery_time_max}`
+                          : method.delivery_time_min
+                          ? `\u00e0 partir de ${method.delivery_time_min}`
+                          : `jusqu'\u00e0 ${method.delivery_time_max}`}
+                        {' '}{method.delivery_time_unit === 'weeks' ? 'sem.' : 'j.'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tags */}
           {product.tags && product.tags.length > 0 && (

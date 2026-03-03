@@ -168,6 +168,18 @@ export interface ShopShippingProfile {
   free_shipping_threshold: number | null;
 }
 
+export type DeliveryTimeUnit = 'days' | 'weeks';
+
+export interface ShopShippingMethod {
+  id?: number;
+  shop_id: number;
+  name: string;
+  zones: string[];
+  delivery_time_min?: number | null;
+  delivery_time_max?: number | null;
+  delivery_time_unit: DeliveryTimeUnit;
+}
+
 export const artists = {
   list: () => request<ArtistProfile[]>("artist", "/api/artists/"),
   get: (id: number) => request<ArtistProfile>("artist", `/api/artists/${id}`),
@@ -212,6 +224,15 @@ export const shops = {
     }),
   getShippingBulk: (shopIds: number[]) =>
     request<Record<number, ShopShippingProfile[]>>("artist", `/api/shops/shipping/bulk?ids=${shopIds.join(',')}`),
+  getShippingMethods: (shopId: number) =>
+    request<ShopShippingMethod[]>("artist", `/api/shops/${shopId}/shipping-methods`),
+  updateShippingMethods: (shopId: number, methods: Omit<ShopShippingMethod, 'shop_id'>[]) =>
+    request<ShopShippingMethod[]>("artist", `/api/shops/${shopId}/shipping-methods`, {
+      method: "PUT",
+      body: JSON.stringify({ methods }),
+    }),
+  getShippingMethodsBulk: (shopIds: number[]) =>
+    request<Record<number, ShopShippingMethod[]>>("artist", `/api/shops/shipping-methods/bulk?ids=${shopIds.join(',')}`),
 };
 
 // ─── Catalog ────────────────────────────────────────────────────────────
@@ -229,7 +250,9 @@ export interface Product {
   processing_time_min?: number;
   processing_time_max?: number;
   processing_time_unit?: 'days' | 'weeks';
-  delivery_time?: number;
+  delivery_time_min?: number;
+  delivery_time_max?: number;
+  delivery_time_unit?: 'days' | 'weeks';
   shipping_fee?: number | null;
   images?: ProductImage[];
   tags?: Tag[];
@@ -275,7 +298,7 @@ export const products = {
     return request<PaginatedProducts>("catalog", `/api/products/${query ? `?${query}` : ""}`);
   },
   get: (id: number) => request<Product>("catalog", `/api/products/${id}`),
-  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time?: number; images?: File[]; tags?: number[] }) => {
+  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time_min?: number; delivery_time_max?: number; delivery_time_unit?: string; images?: File[]; tags?: number[] }) => {
     const formData = new FormData();
     formData.append('shop_id', String(data.shop_id));
     if (data.category_id) formData.append('category_id', String(data.category_id));
@@ -286,7 +309,9 @@ export const products = {
     if (data.processing_time_min !== undefined) formData.append('processing_time_min', String(data.processing_time_min));
     if (data.processing_time_max !== undefined) formData.append('processing_time_max', String(data.processing_time_max));
     if (data.processing_time_unit) formData.append('processing_time_unit', data.processing_time_unit);
-    if (data.delivery_time !== undefined) formData.append('delivery_time', String(data.delivery_time));
+    if (data.delivery_time_min !== undefined) formData.append('delivery_time_min', String(data.delivery_time_min));
+    if (data.delivery_time_max !== undefined) formData.append('delivery_time_max', String(data.delivery_time_max));
+    if (data.delivery_time_unit) formData.append('delivery_time_unit', data.delivery_time_unit);
     if (data.images && data.images.length > 0) {
       data.images.forEach((file) => formData.append('images', file));
     }
