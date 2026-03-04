@@ -53,12 +53,16 @@ export function computeShopShipping(
   shopItems: { product: Product; quantity: number }[],
   profiles: ShopShippingProfile[],
   zone: ShippingZone,
-): number {
+): number | null {
   const profile = profiles.find((p) => p.zone === zone);
-  const baseFee = profile ? Number(profile.base_fee) : 0;
-  const additionalFee = profile ? Number(profile.additional_item_fee) : 0;
+
+  // No profile for this zone → shipping unavailable
+  if (!profile) return null;
+
+  const baseFee = Number(profile.base_fee);
+  const additionalFee = Number(profile.additional_item_fee);
   const freeThreshold =
-    profile?.free_shipping_threshold != null
+    profile.free_shipping_threshold != null
       ? Number(profile.free_shipping_threshold)
       : null;
 
@@ -131,6 +135,8 @@ function ShopGroup({
     zone,
   );
 
+  const shippingUnavailable = shopShipping === null;
+
   const profile = shippingProfiles.find((p) => p.zone === zone);
   const freeThreshold =
     profile?.free_shipping_threshold != null
@@ -140,7 +146,7 @@ function ShopGroup({
     freeThreshold !== null ? Math.max(0, freeThreshold - shopSubtotal) : null;
 
   return (
-    <div className="border border-sage-200 bg-white">
+    <div className={`border bg-white ${shippingUnavailable ? 'border-amber-300' : 'border-sage-200'}`}>
       {/* Shop header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-sage-50/50 border-b border-sage-200">
         <Store size={16} className="text-sage-600" />
@@ -270,7 +276,7 @@ function ShopGroup({
       </div>
 
       {/* Shop shipping summary */}
-      <div className="px-4 py-3 bg-sage-50/30 border-t border-sage-200 space-y-1">
+      <div className={`px-4 py-3 border-t space-y-1 ${shippingUnavailable ? 'bg-amber-50/50 border-amber-200' : 'bg-sage-50/30 border-sage-200'}`}>
         <div className="flex justify-between text-sm text-stone-600">
           <span>Sous-total boutique</span>
           <span className="font-medium">{shopSubtotal.toFixed(2)} €</span>
@@ -280,11 +286,20 @@ function ShopGroup({
             <Truck size={12} />
             Livraison
           </span>
-          <span className={shopShipping === 0 ? "text-sage-600 font-medium" : ""}>
-            {shopShipping === 0 ? "offerte" : `${shopShipping.toFixed(2)} €`}
-          </span>
+          {shippingUnavailable ? (
+            <span className="text-amber-600 font-medium">indisponible</span>
+          ) : (
+            <span className={shopShipping === 0 ? "text-sage-600 font-medium" : ""}>
+              {shopShipping === 0 ? "offerte" : `${shopShipping.toFixed(2)} €`}
+            </span>
+          )}
         </div>
-        {remainingForFree !== null && remainingForFree > 0 && (
+        {shippingUnavailable && (
+          <p className="text-xs text-amber-600 pt-1 flex items-center gap-1">
+            ⚠ Cette boutique ne livre pas dans la zone sélectionnée
+          </p>
+        )}
+        {!shippingUnavailable && remainingForFree !== null && remainingForFree > 0 && (
           <p className="text-xs text-sage-600 pt-1">
             Plus que{" "}
             <span className="font-bold">{remainingForFree.toFixed(2)} €</span>{" "}
@@ -457,8 +472,10 @@ export default function CartPage() {
     return sum + Number(product.price) * item.quantity;
   }, 0);
 
-  const totalShipping = useMemo(() => {
+  const { totalShipping, hasUnavailableShipping, unavailableShopIds } = useMemo(() => {
     let total = 0;
+    let hasUnavailable = false;
+    const unavailableIds: number[] = [];
     for (const [shopId, shopItems] of shopGroups) {
       const enriched = shopItems
         .map((i) => ({
@@ -466,13 +483,19 @@ export default function CartPage() {
           quantity: i.quantity,
         }))
         .filter((i) => i.product);
-      total += computeShopShipping(
+      const cost = computeShopShipping(
         enriched as { product: Product; quantity: number }[],
         shippingProfiles[shopId] || [],
         zone,
       );
+      if (cost === null) {
+        hasUnavailable = true;
+        unavailableIds.push(shopId);
+      } else {
+        total += cost;
+      }
     }
-    return total;
+    return { totalShipping: total, hasUnavailableShipping: hasUnavailable, unavailableShopIds: unavailableIds };
   }, [shopGroups, productMap, shippingProfiles, zone]);
 
   const grandTotal = subtotal + totalShipping;
@@ -688,10 +711,11 @@ export default function CartPage() {
                       shippingProfiles[shopId] || [],
                       zone,
                     );
+                    const isUnavailable = shopShipping === null;
                     return (
                       <div
                         key={shopId}
-                        className="flex justify-between text-stone-500 text-xs pl-2"
+                        className={`flex justify-between text-xs pl-2 ${isUnavailable ? 'text-amber-600' : 'text-stone-500'}`}
                       >
                         <span className="flex items-center gap-1">
                           <Truck size={10} />
@@ -699,14 +723,18 @@ export default function CartPage() {
                         </span>
                         <span
                           className={
-                            shopShipping === 0
-                              ? "text-sage-600 font-medium"
-                              : ""
+                            isUnavailable
+                              ? "font-medium"
+                              : shopShipping === 0
+                                ? "text-sage-600 font-medium"
+                                : ""
                           }
                         >
-                          {shopShipping === 0
-                            ? "offerte"
-                            : `${shopShipping.toFixed(2)} €`}
+                          {isUnavailable
+                            ? "indisponible"
+                            : shopShipping === 0
+                              ? "offerte"
+                              : `${shopShipping.toFixed(2)} €`}
                         </span>
                       </div>
                     );
@@ -717,17 +745,21 @@ export default function CartPage() {
                       <Truck size={12} />
                       Livraison totale
                     </span>
-                    <span
-                      className={
-                        totalShipping === 0
-                          ? "text-sage-600 font-medium"
-                          : "font-medium"
-                      }
-                    >
-                      {totalShipping === 0
-                        ? "offerte"
-                        : `${totalShipping.toFixed(2)} €`}
-                    </span>
+                    {hasUnavailableShipping ? (
+                      <span className="text-amber-600 font-medium">—</span>
+                    ) : (
+                      <span
+                        className={
+                          totalShipping === 0
+                            ? "text-sage-600 font-medium"
+                            : "font-medium"
+                        }
+                      >
+                        {totalShipping === 0
+                          ? "offerte"
+                          : `${totalShipping.toFixed(2)} €`}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex justify-between text-stone-600 border-t border-sage-100 pt-3">
@@ -738,14 +770,44 @@ export default function CartPage() {
                   </div>
                 </div>
 
+                {/* Shipping unavailable warning */}
+                {hasUnavailableShipping && (
+                  <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 space-y-1">
+                    <p className="font-medium flex items-center gap-1">⚠ Livraison indisponible</p>
+                    <p>
+                      {unavailableShopIds.length === 1 ? "La boutique" : "Les boutiques"}{" "}
+                      <strong>
+                        {unavailableShopIds
+                          .map((id) => shopMap[id]?.name || `#${id}`)
+                          .join(", ")}
+                      </strong>{" "}
+                      {unavailableShopIds.length === 1 ? "ne livre pas" : "ne livrent pas"} dans la zone{" "}
+                      <strong>
+                        {zone === "france" ? "France" : zone === "europe" ? "Europe" : "Monde"}
+                      </strong>.
+                      Changez de pays ou retirez ces articles.
+                    </p>
+                  </div>
+                )}
+
                 {/* Checkout tout le panier */}
-                <Link
-                  href={`/checkout?country=${selectedCountry}`}
-                  className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-all"
-                >
-                  commander tout le panier
-                  <ArrowRight size={14} />
-                </Link>
+                {hasUnavailableShipping ? (
+                  <button
+                    disabled
+                    className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-stone-300 bg-stone-200 px-6 py-3 text-sm text-stone-400 cursor-not-allowed"
+                  >
+                    commander tout le panier
+                    <ArrowRight size={14} />
+                  </button>
+                ) : (
+                  <Link
+                    href={`/checkout?country=${selectedCountry}`}
+                    className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-sage-700 bg-sage-700 px-6 py-3 text-sm text-white hover:bg-sage-800 transition-all"
+                  >
+                    commander tout le panier
+                    <ArrowRight size={14} />
+                  </Link>
+                )}
 
                 {/* Checkout par boutique (si plus d'une boutique) */}
                 {shopGroups.size > 1 && (
@@ -773,7 +835,20 @@ export default function CartPage() {
                         shippingProfiles[shopId] || [],
                         zone,
                       );
-                      return (
+                      const isUnavailable = shopShip === null;
+                      return isUnavailable ? (
+                        <button
+                          key={shopId}
+                          disabled
+                          className="w-full flex items-center justify-between gap-2 border border-amber-200 bg-amber-50/50 px-4 py-2.5 text-xs text-amber-500 cursor-not-allowed"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Store size={12} />
+                            {shopMap[shopId]?.name || `Boutique #${shopId}`}
+                          </span>
+                          <span className="font-medium">indisponible</span>
+                        </button>
+                      ) : (
                         <Link
                           key={shopId}
                           href={`/checkout?country=${selectedCountry}&shop=${shopId}`}

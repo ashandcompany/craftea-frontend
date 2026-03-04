@@ -270,11 +270,12 @@ function CheckoutContent() {
                     quantity: i.quantity,
                 }))
                 .filter((i) => i.product) as { product: Product; quantity: number }[];
-            total += computeShopShipping(
+            const cost = computeShopShipping(
                 enriched,
                 shippingProfiles[shopId] || [],
                 zone,
             );
+            if (cost !== null) total += cost;
         }
         return total;
     }, [shopGroups, productMap, shippingProfiles, zone]);

@@ -23,7 +23,7 @@ interface OrderSummaryProps {
     enriched: { product: Product; quantity: number }[],
     profiles: ShopShippingProfile[],
     zone: ShippingZone,
-  ) => number;
+  ) => number | null;
   isCheckoutStep?: boolean;
 }
 
@@ -162,11 +162,14 @@ export function OrderSummary({
                           shippingProfiles[shopId] || [],
                           zone,
                         );
+                        const isUnavailable = shopShip === null;
                         return (
                           <span className={`text-[10px] px-2 py-0.5 border ${
-                            shopShip === 0 
-                              ? "border-sage-200 bg-sage-100 text-sage-700" 
-                              : "border-sage-100 text-sage-600"
+                            isUnavailable
+                              ? "border-amber-200 bg-amber-50 text-amber-600"
+                              : shopShip === 0 
+                                ? "border-sage-200 bg-sage-100 text-sage-700" 
+                                : "border-sage-100 text-sage-600"
                           }`}>
                             {(() => {
                               const shopTotal = shopItems.reduce((acc, item) => {

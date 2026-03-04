@@ -41,12 +41,15 @@ const ZONE_LABELS: Record<ShippingZoneLabel, { name: string; description: string
   },
 };
 
+interface ZoneData {
+  enabled: boolean;
+  base_fee: string;
+  additional_item_fee: string;
+  free_shipping_threshold: string;
+}
+
 interface FormData {
-  [key: string]: {
-    base_fee: string;
-    additional_item_fee: string;
-    free_shipping_threshold: string;
-  };
+  [key: string]: ZoneData;
 }
 
 export default function ShopShippingPage() {
@@ -62,9 +65,9 @@ export default function ShopShippingPage() {
   const [shop, setShop] = useState<Shop | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
-    france: { base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
-    europe: { base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
-    world: { base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
+    france: { enabled: false, base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
+    europe: { enabled: false, base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
+    world: { enabled: false, base_fee: "0", additional_item_fee: "0", free_shipping_threshold: "" },
   });
 
   // Shipping methods (modes de livraison)
@@ -98,16 +101,19 @@ export default function ShopShippingPage() {
         // Populate form with existing profiles
         const newForm: FormData = {
           france: {
+            enabled: false,
             base_fee: "0",
             additional_item_fee: "0",
             free_shipping_threshold: "",
           },
           europe: {
+            enabled: false,
             base_fee: "0",
             additional_item_fee: "0",
             free_shipping_threshold: "",
           },
           world: {
+            enabled: false,
             base_fee: "0",
             additional_item_fee: "0",
             free_shipping_threshold: "",
@@ -119,6 +125,7 @@ export default function ShopShippingPage() {
             const zone = profile.zone as ShippingZoneLabel;
             if (newForm[zone]) {
               newForm[zone] = {
+                enabled: true,
                 base_fee: String(Number(profile.base_fee) || 0),
                 additional_item_fee: String(
                   Number(profile.additional_item_fee) || 0
@@ -175,20 +182,30 @@ export default function ShopShippingPage() {
     setSaved(false);
   };
 
+  const toggleZone = (zone: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [zone]: { ...prev[zone], enabled: !prev[zone].enabled },
+    }));
+    setSaved(false);
+  };
+
   const handleSave = async () => {
     setError("");
     setSaving(true);
 
     try {
-      // Prepare profiles for submission
-      const profiles = Object.entries(formData).map(([zone, data]) => ({
-        zone: zone as ShippingZoneLabel,
-        base_fee: parseFloat(data.base_fee) || 0,
-        additional_item_fee: parseFloat(data.additional_item_fee) || 0,
-        free_shipping_threshold: data.free_shipping_threshold
-          ? parseFloat(data.free_shipping_threshold)
-          : null,
-      }));
+      // Only submit enabled zones
+      const profiles = Object.entries(formData)
+        .filter(([, data]) => data.enabled)
+        .map(([zone, data]) => ({
+          zone: zone as ShippingZoneLabel,
+          base_fee: parseFloat(data.base_fee) || 0,
+          additional_item_fee: parseFloat(data.additional_item_fee) || 0,
+          free_shipping_threshold: data.free_shipping_threshold
+            ? parseFloat(data.free_shipping_threshold)
+            : null,
+        }));
 
       await shopsApi.updateShipping(shopId, profiles);
       setSaved(true);
@@ -331,20 +348,38 @@ export default function ShopShippingPage() {
               key={zone}
               className="border border-stone-200 rounded-lg overflow-hidden"
             >
-              {/* Zone header */}
+              {/* Zone header with toggle */}
               <div className="bg-gradient-to-r from-sage-50 to-sage-25 border-b border-stone-200 px-4 py-3">
-                <div className="flex items-start gap-2">
-                  <Truck className="text-sage-600 flex-shrink-0 mt-0.5" size={18} />
-                  <div>
-                    <h3 className="font-medium text-stone-900">{labels.name}</h3>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      {labels.description}
-                    </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start gap-2">
+                    <Truck className={`flex-shrink-0 mt-0.5 ${formData[zone].enabled ? 'text-sage-600' : 'text-stone-300'}`} size={18} />
+                    <div>
+                      <h3 className={`font-medium ${formData[zone].enabled ? 'text-stone-900' : 'text-stone-400'}`}>{labels.name}</h3>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        {labels.description}
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleZone(zone)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      formData[zone].enabled ? 'bg-sage-600' : 'bg-stone-300'
+                    }`}
+                    role="switch"
+                    aria-checked={formData[zone].enabled}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                        formData[zone].enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
-              {/* Zone fields */}
+              {/* Zone fields — only shown when enabled */}
+              {formData[zone].enabled ? (
               <div className="p-4 space-y-4">
                 {/* Base fee */}
                 <div>
@@ -439,6 +474,11 @@ export default function ShopShippingPage() {
                   })()}
                 </div>
               </div>
+              ) : (
+                <div className="px-4 py-3 text-xs text-stone-400 italic">
+                  Livraison désactivée pour cette zone
+                </div>
+              )}
             </div>
           )
         )}
