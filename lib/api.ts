@@ -1,12 +1,4 @@
-const API_URLS = {
-  user: process.env.NEXT_PUBLIC_USER_API || "http://localhost:3001",
-  artist: process.env.NEXT_PUBLIC_ARTIST_API || "http://localhost:3002",
-  catalog: process.env.NEXT_PUBLIC_CATALOG_API || "http://localhost:3003",
-  interaction: process.env.NEXT_PUBLIC_INTERACTION_API || "http://localhost:3004",
-  order: process.env.NEXT_PUBLIC_ORDER_API || "http://localhost:3005",
-  cart: process.env.NEXT_PUBLIC_CART_API || "http://localhost:3006",
-  payment: process.env.NEXT_PUBLIC_PAYMENT_API || "http://localhost:3007",
-};
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -23,7 +15,6 @@ export function removeToken() {
 }
 
 async function request<T>(
-  base: keyof typeof API_URLS,
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -37,7 +28,7 @@ async function request<T>(
   }
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URLS[base]}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
   });
@@ -82,23 +73,23 @@ export interface AuthResponse {
 
 export const auth = {
   register: (data: { firstname: string; lastname: string; email: string; password: string }) =>
-    request<AuthResponse>("user", "/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
+    request<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
-    request<AuthResponse>("user", "/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
-  me: () => request<User>("user", "/api/auth/me"),
+    request<AuthResponse>("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  me: () => request<User>("/api/auth/me"),
 };
 
 // ─── Users ──────────────────────────────────────────────────────────────
 
 export const users = {
-  list: () => request<User[]>("user", "/api/users/"),
-  get: (id: number) => request<User>("user", `/api/users/${id}`),
+  list: () => request<User[]>("/api/users/"),
+  get: (id: number) => request<User>(`/api/users/${id}`),
   update: (id: number, data: Partial<Pick<User, "firstname" | "lastname" | "email">>) =>
-    request<User>("user", `/api/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    request<User>(`/api/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   toggleActive: (id: number) =>
-    request<User>("user", `/api/users/${id}/toggle-active`, { method: "PATCH" }),
+    request<User>(`/api/users/${id}/toggle-active`, { method: "PATCH" }),
   changeRole: (id: number, role: User["role"]) =>
-    request<User>("user", `/api/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+    request<User>(`/api/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
 };
 
 // ─── Addresses ──────────────────────────────────────────────────────────
@@ -114,13 +105,13 @@ export interface Address {
 }
 
 export const addresses = {
-  list: () => request<Address[]>("user", "/api/addresses/"),
+  list: () => request<Address[]>("/api/addresses/"),
   create: (data: Omit<Address, "id" | "user_id">) =>
-    request<Address>("user", "/api/addresses/", { method: "POST", body: JSON.stringify(data) }),
+    request<Address>("/api/addresses/", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Partial<Address>) =>
-    request<Address>("user", `/api/addresses/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    request<Address>(`/api/addresses/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>("user", `/api/addresses/${id}`, { method: "DELETE" }),
+    request<void>(`/api/addresses/${id}`, { method: "DELETE" }),
 };
 
 // ─── Artists ────────────────────────────────────────────────────────────
@@ -181,58 +172,58 @@ export interface ShopShippingMethod {
 }
 
 export const artists = {
-  list: () => request<ArtistProfile[]>("artist", "/api/artists/"),
-  get: (id: number) => request<ArtistProfile>("artist", `/api/artists/${id}`),
-  me: () => request<ArtistProfile>("artist", "/api/artists/profile/me"),
+  list: () => request<ArtistProfile[]>("/api/artists/"),
+  get: (id: number) => request<ArtistProfile>(`/api/artists/${id}`),
+  me: () => request<ArtistProfile>("/api/artists/profile/me"),
   updateMe: (data: Partial<Pick<ArtistProfile, "bio" | "banner_url" | "logo_url" | "social_links">> | FormData) =>
-    request<ArtistProfile>("artist", "/api/artists/profile/me", {
+    request<ArtistProfile>("/api/artists/profile/me", {
       method: "PUT",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   create: (data: Partial<ArtistProfile> | FormData) =>
-    request<ArtistProfile>("artist", "/api/artists/", {
+    request<ArtistProfile>("/api/artists/", {
       method: "POST",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
-  adminListAll: () => request<ArtistProfile[]>("artist", "/api/artists/admin/all"),
+  adminListAll: () => request<ArtistProfile[]>("/api/artists/admin/all"),
   toggleValidation: (id: number) =>
-    request<ArtistProfile>("artist", `/api/artists/${id}/toggle-validation`, { method: "PATCH" }),
+    request<ArtistProfile>(`/api/artists/${id}/toggle-validation`, { method: "PATCH" }),
 };
 
 export const shops = {
   listByArtist: (artistId: number) =>
-    request<Shop[]>("artist", `/api/shops/artist/${artistId}`),
-  get: (id: number) => request<Shop>("artist", `/api/shops/${id}`),
+    request<Shop[]>(`/api/shops/artist/${artistId}`),
+  get: (id: number) => request<Shop>(`/api/shops/${id}`),
   create: (data: Pick<Shop, "name" | "description" | "location"> | FormData) =>
-    request<Shop>("artist", "/api/shops/", {
+    request<Shop>("/api/shops/", {
       method: "POST",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   update: (id: number, data: Partial<Pick<Shop, "name" | "description" | "location">> | FormData) =>
-    request<Shop>("artist", `/api/shops/${id}`, {
+    request<Shop>(`/api/shops/${id}`, {
       method: "PUT",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   delete: (id: number) =>
-    request<void>("artist", `/api/shops/${id}`, { method: "DELETE" }),
+    request<void>(`/api/shops/${id}`, { method: "DELETE" }),
   getShipping: (shopId: number) =>
-    request<ShopShippingProfile[]>("artist", `/api/shops/${shopId}/shipping`),
+    request<ShopShippingProfile[]>(`/api/shops/${shopId}/shipping`),
   updateShipping: (shopId: number, profiles: Omit<ShopShippingProfile, 'id' | 'shop_id'>[]) =>
-    request<ShopShippingProfile[]>("artist", `/api/shops/${shopId}/shipping`, {
+    request<ShopShippingProfile[]>(`/api/shops/${shopId}/shipping`, {
       method: "PUT",
       body: JSON.stringify({ profiles }),
     }),
   getShippingBulk: (shopIds: number[]) =>
-    request<Record<number, ShopShippingProfile[]>>("artist", `/api/shops/shipping/bulk?ids=${shopIds.join(',')}`),
+    request<Record<number, ShopShippingProfile[]>>(`/api/shops/shipping/bulk?ids=${shopIds.join(',')}`),
   getShippingMethods: (shopId: number) =>
-    request<ShopShippingMethod[]>("artist", `/api/shops/${shopId}/shipping-methods`),
+    request<ShopShippingMethod[]>(`/api/shops/${shopId}/shipping-methods`),
   updateShippingMethods: (shopId: number, methods: Omit<ShopShippingMethod, 'shop_id'>[]) =>
-    request<ShopShippingMethod[]>("artist", `/api/shops/${shopId}/shipping-methods`, {
+    request<ShopShippingMethod[]>(`/api/shops/${shopId}/shipping-methods`, {
       method: "PUT",
       body: JSON.stringify({ methods }),
     }),
   getShippingMethodsBulk: (shopIds: number[]) =>
-    request<Record<number, ShopShippingMethod[]>>("artist", `/api/shops/shipping-methods/bulk?ids=${shopIds.join(',')}`),
+    request<Record<number, ShopShippingMethod[]>>(`/api/shops/shipping-methods/bulk?ids=${shopIds.join(',')}`),
 };
 
 // ─── Catalog ────────────────────────────────────────────────────────────
@@ -295,9 +286,9 @@ export const products = {
       });
     }
     const query = qs.toString();
-    return request<PaginatedProducts>("catalog", `/api/products/${query ? `?${query}` : ""}`);
+    return request<PaginatedProducts>(`/api/products/${query ? `?${query}` : ""}`);
   },
-  get: (id: number) => request<Product>("catalog", `/api/products/${id}`),
+  get: (id: number) => request<Product>(`/api/products/${id}`),
   create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time_min?: number; delivery_time_max?: number; delivery_time_unit?: string; images?: File[]; tags?: number[] }) => {
     const formData = new FormData();
     formData.append('shop_id', String(data.shop_id));
@@ -318,7 +309,7 @@ export const products = {
     if (data.tags && data.tags.length > 0) {
       formData.append('tags', JSON.stringify(data.tags));
     }
-    return request<Product>("catalog", "/api/products/", { method: "POST", body: formData });
+    return request<Product>("/api/products/", { method: "POST", body: formData });
   },
   update: (id: number, data: Partial<Product & { images?: File[]; tags?: number[]; images_to_delete?: number[]; image_order?: number[] }>) => {
     const body = data instanceof FormData ? data : (() => {
@@ -341,33 +332,33 @@ export const products = {
       });
       return formData;
     })();
-    return request<Product>("catalog", `/api/products/${id}`, { method: "PUT", body });
+    return request<Product>(`/api/products/${id}`, { method: "PUT", body });
   },
   delete: (id: number) =>
-    request<void>("catalog", `/api/products/${id}`, { method: "DELETE" }),
+    request<void>(`/api/products/${id}`, { method: "DELETE" }),
   updateStock: (id: number, stock: number) =>
-    request<Product>("catalog", `/api/products/${id}/stock`, { method: "PATCH", body: JSON.stringify({ stock }) }),
+    request<Product>(`/api/products/${id}/stock`, { method: "PATCH", body: JSON.stringify({ stock }) }),
   toggleActive: (id: number) =>
-    request<Product>("catalog", `/api/products/${id}/toggle-active`, { method: "PATCH" }),
+    request<Product>(`/api/products/${id}/toggle-active`, { method: "PATCH" }),
 };
 
 export const categories = {
-  list: () => request<Category[]>("catalog", "/api/categories/"),
-  get: (id: number) => request<Category>("catalog", `/api/categories/${id}`),
+  list: () => request<Category[]>("/api/categories/"),
+  get: (id: number) => request<Category>(`/api/categories/${id}`),
   create: (data: Pick<Category, "name" | "description">) =>
-    request<Category>("catalog", "/api/categories/", { method: "POST", body: JSON.stringify(data) }),
+    request<Category>("/api/categories/", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: Partial<Category>) =>
-    request<Category>("catalog", `/api/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    request<Category>(`/api/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>("catalog", `/api/categories/${id}`, { method: "DELETE" }),
+    request<void>(`/api/categories/${id}`, { method: "DELETE" }),
 };
 
 export const tags = {
-  list: () => request<Tag[]>("catalog", "/api/tags/"),
+  list: () => request<Tag[]>("/api/tags/"),
   create: (data: { name: string }) =>
-    request<Tag>("catalog", "/api/tags/", { method: "POST", body: JSON.stringify(data) }),
+    request<Tag>("/api/tags/", { method: "POST", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>("catalog", `/api/tags/${id}`, { method: "DELETE" }),
+    request<void>(`/api/tags/${id}`, { method: "DELETE" }),
 };
 
 // ─── Interactions ───────────────────────────────────────────────────────
@@ -394,14 +385,14 @@ export const favorites = {
     const qs = new URLSearchParams();
     if (params) Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
     const query = qs.toString();
-    return request<{ data: Favorite[]; total: number }>("interaction", `/api/favorites/${query ? `?${query}` : ""}`);
+    return request<{ data: Favorite[]; total: number }>(`/api/favorites/${query ? `?${query}` : ""}`);
   },
   check: (productId: number) =>
-    request<{ isFavorite: boolean }>("interaction", `/api/favorites/check/${productId}`),
+    request<{ isFavorite: boolean }>(`/api/favorites/check/${productId}`),
   add: (product_id: number) =>
-    request<Favorite>("interaction", "/api/favorites/", { method: "POST", body: JSON.stringify({ product_id }) }),
+    request<Favorite>("/api/favorites/", { method: "POST", body: JSON.stringify({ product_id }) }),
   remove: (productId: number) =>
-    request<void>("interaction", `/api/favorites/${productId}`, { method: "DELETE" }),
+    request<void>(`/api/favorites/${productId}`, { method: "DELETE" }),
 };
 
 export const reviews = {
@@ -409,17 +400,17 @@ export const reviews = {
     const qs = new URLSearchParams();
     if (params) Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, String(v)); });
     const query = qs.toString();
-    return request<{ data: Review[]; total: number }>("interaction", `/api/reviews/product/${productId}${query ? `?${query}` : ""}`);
+    return request<{ data: Review[]; total: number }>(`/api/reviews/product/${productId}${query ? `?${query}` : ""}`);
   },
   average: (productId: number) =>
-    request<{ product_id: number; average: number; count: number }>("interaction", `/api/reviews/product/${productId}/average`),
-  mine: () => request<{ data: Review[] }>("interaction", "/api/reviews/me"),
+    request<{ product_id: number; average: number; count: number }>(`/api/reviews/product/${productId}/average`),
+  mine: () => request<{ data: Review[] }>("/api/reviews/me"),
   create: (data: { product_id: number; rating: number; comment?: string }) =>
-    request<Review>("interaction", "/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
+    request<Review>("/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
   update: (id: number, data: { rating?: number; comment?: string }) =>
-    request<Review>("interaction", `/api/reviews/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    request<Review>(`/api/reviews/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   delete: (id: number) =>
-    request<void>("interaction", `/api/reviews/${id}`, { method: "DELETE" }),
+    request<void>(`/api/reviews/${id}`, { method: "DELETE" }),
 };
 
 // ─── Orders ─────────────────────────────────────────────────────────────
@@ -456,17 +447,17 @@ export interface Order {
 
 export const orders = {
   create: (items: { product_id: number; quantity: number; price: number }[], shipping_zone?: string, shop_ids?: number[]) =>
-    request<Order>("order", "/api/orders", { method: "POST", body: JSON.stringify({ items, shipping_zone, shop_ids }) }),
+    request<Order>("/api/orders", { method: "POST", body: JSON.stringify({ items, shipping_zone, shop_ids }) }),
   my: () =>
-    request<Order[]>("order", "/api/orders/my"),
+    request<Order[]>("/api/orders/my"),
   artistOrders: () =>
-    request<Order[]>("order", "/api/orders/artist/my"),
+    request<Order[]>("/api/orders/artist/my"),
   list: () =>
-    request<Order[]>("order", "/api/orders/"),
+    request<Order[]>("/api/orders/"),
   get: (id: number) =>
-    request<Order>("order", `/api/orders/${id}`),
+    request<Order>(`/api/orders/${id}`),
   updateStatus: (id: number, status: OrderStatus) =>
-    request<Order>("order", `/api/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    request<Order>(`/api/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
 };
 
 // ─── Cart ───────────────────────────────────────────────────────────────
@@ -488,15 +479,15 @@ export interface Cart {
 
 export const cart = {
   get: () =>
-    request<Cart>("cart", "/api/cart"),
+    request<Cart>("/api/cart"),
   addItem: (product_id: number, quantity: number = 1) =>
-    request<Cart>("cart", "/api/cart/items", { method: "POST", body: JSON.stringify({ product_id, quantity }) }),
+    request<Cart>("/api/cart/items", { method: "POST", body: JSON.stringify({ product_id, quantity }) }),
   updateItem: (itemId: number, quantity: number) =>
-    request<Cart>("cart", `/api/cart/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantity }) }),
+    request<Cart>(`/api/cart/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantity }) }),
   removeItem: (itemId: number) =>
-    request<Cart>("cart", `/api/cart/items/${itemId}`, { method: "DELETE" }),
+    request<Cart>(`/api/cart/items/${itemId}`, { method: "DELETE" }),
   clear: () =>
-    request<Cart>("cart", "/api/cart", { method: "DELETE" }),
+    request<Cart>("/api/cart", { method: "DELETE" }),
 };
 
 // ─── Payments ───────────────────────────────────────────────────────────
@@ -527,18 +518,18 @@ export interface Payment {
 export const payments = {
   /** Create a Stripe PaymentIntent — returns Payment with stripe_client_secret */
   createIntent: (data: { order_id?: number; amount: number; currency?: string }) =>
-    request<Payment>("payment", "/api/payments/create-intent", { method: "POST", body: JSON.stringify(data) }),
+    request<Payment>("/api/payments/create-intent", { method: "POST", body: JSON.stringify(data) }),
   /** Confirm a payment after Stripe.js card confirmation */
   confirm: (data: { payment_intent_id: string }) =>
-    request<Payment>("payment", "/api/payments/confirm", { method: "POST", body: JSON.stringify(data) }),
+    request<Payment>("/api/payments/confirm", { method: "POST", body: JSON.stringify(data) }),
   my: () =>
-    request<Payment[]>("payment", "/api/payments/my"),
+    request<Payment[]>("/api/payments/my"),
   byOrder: (orderId: number) =>
-    request<Payment[]>("payment", `/api/payments/order/${orderId}`),
+    request<Payment[]>(`/api/payments/order/${orderId}`),
   get: (id: number) =>
-    request<Payment>("payment", `/api/payments/${id}`),
+    request<Payment>(`/api/payments/${id}`),
   refund: (id: number, reason?: string) =>
-    request<Payment>("payment", `/api/payments/${id}/refund`, { method: "POST", body: JSON.stringify({ reason }) }),
+    request<Payment>(`/api/payments/${id}/refund`, { method: "POST", body: JSON.stringify({ reason }) }),
   list: () =>
-    request<Payment[]>("payment", "/api/payments"),
+    request<Payment[]>("/api/payments"),
 };
