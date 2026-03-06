@@ -22,11 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="scroll-smooth">
-      <body suppressHydrationWarning className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased`}>
+    <html lang="fr" className="scroll-smooth" suppressHydrationWarning>
+      <body 
+        suppressHydrationWarning 
+        className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased transition-colors dark:bg-stone-950 dark:text-stone-200`}
+      >
         <Providers>
           <Navbar />
-          <main className="min-h-[calc(100vh-4rem)]">
+          <main className="min-h-[calc(100vh-4rem)] transition-colors">
             {children}
           </main>
           <Footer />

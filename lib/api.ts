@@ -131,8 +131,20 @@ export interface ArtistProfile {
   logo_url?: string;
   social_links?: string;
   validated: boolean;
+  stripe_account_id?: string | null;
+  stripe_onboarded?: boolean;
+  wallet_balance?: number;
+  pending_balance?: number;
   shops?: Shop[];
   created_at: string;
+}
+
+export interface StripeOnboardingStatus {
+  stripeAccountId: string | null;
+  stripeOnboarded: boolean;
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
 }
 
 export interface Shop {
@@ -188,6 +200,12 @@ export const artists = {
   adminListAll: () => request<ArtistProfile[]>("/api/artists/admin/all"),
   toggleValidation: (id: number) =>
     request<ArtistProfile>(`/api/artists/${id}/toggle-validation`, { method: "PATCH" }),
+  createStripeOnboardingLink: () =>
+    request<{ url: string; stripeAccountId: string }>("/api/artists/profile/me/stripe/onboarding", {
+      method: "POST",
+    }),
+  getStripeOnboardingStatus: () =>
+    request<StripeOnboardingStatus>("/api/artists/profile/me/stripe/status"),
 };
 
 export const shops = {

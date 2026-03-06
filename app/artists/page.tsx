@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { artists as artistsApi, type ArtistProfile } from "@/lib/api";
 import { ArtistCard } from "@/components/artist-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarketplacePage, MarketplacePageContent } from "@/components/page/marketplace-page";
 import { Hourglass } from "lucide-react";
 
 export default function ArtistsPage() {
@@ -20,14 +21,11 @@ export default function ArtistsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
-      {/* Header */}
-      <div className="mb-10 border-b border-stone-200 pb-6">
-        <h1 className="text-3xl font-light tracking-tight text-stone-900">Artistes</h1>
-        <p className="mt-2 text-sm text-stone-500">
-          — {loading ? 'chargement...' : `${artists.length} artisan${artists.length > 1 ? 's' : ''}`}
-        </p>
-      </div>
+    <MarketplacePage
+      title="Artistes"
+      subtitle={`— ${loading ? "chargement..." : `${artists.length} artisan${artists.length > 1 ? "s" : ""}`}`}
+    >
+      <MarketplacePageContent>
 
       {/* Content */}
       {loading ? (
@@ -63,6 +61,7 @@ export default function ArtistsPage() {
           </div>
         </>
       )}
-    </div>
+      </MarketplacePageContent>
+    </MarketplacePage>
   );
 }
