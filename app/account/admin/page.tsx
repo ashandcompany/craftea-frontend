@@ -19,8 +19,8 @@ import {
 } from "@/lib/api";
 import {
   Users, Palette, ShoppingBag, FolderOpen, Tag as TagIcon,
-  ArrowRight, Hourglass, Shield, AlertTriangle, CheckCircle2,
-  Clock,
+  ArrowRight, Hourglass, Shield, AlertTriangle,
+  Clock, Wallet,
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
   const stats = [
     { label: "utilisateurs", value: usersList.length, icon: Users, href: "/account/admin/users", accent: inactiveUsers > 0 ? `${inactiveUsers} inactif${inactiveUsers > 1 ? "s" : ""}` : undefined },
     { label: "artistes", value: artistsList.length, icon: Palette, href: "/account/admin/artists", accent: pendingArtists > 0 ? `${pendingArtists} en attente` : undefined },
+    { label: "wallets", value: artistsList.length, icon: Wallet, href: "/account/admin/wallets" },
     { label: "commandes", value: ordersList.length, icon: ShoppingBag, href: "/account/admin/orders", accent: pendingOrders > 0 ? `${pendingOrders} en attente` : undefined },
     { label: "catégories", value: categoriesList.length, icon: FolderOpen, href: "/account/admin/categories" },
     { label: "tags", value: tagsList.length, icon: TagIcon, href: "/account/admin/tags" },
@@ -178,6 +179,20 @@ export default function AdminDashboard() {
                   <div>
                     <p className="text-sm text-stone-800">Commandes</p>
                     <p className="text-[10px] text-stone-400">suivre et gérer</p>
+                  </div>
+                </div>
+                <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+              </Link>
+
+              <Link
+                href="/account/admin/wallets"
+                className="group flex items-center justify-between border border-stone-200 p-4 hover:border-stone-400 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Wallet size={18} className="text-stone-400 group-hover:text-stone-600" />
+                  <div>
+                    <p className="text-sm text-stone-800">Wallets artistes</p>
+                    <p className="text-[10px] text-stone-400">suivre soldes et retraits</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />

@@ -533,6 +533,29 @@ export interface Payment {
   updated_at: string;
 }
 
+export interface WalletSnapshot {
+  artistId: number;
+  stripeAccountId: string | null;
+  stripeOnboarded: boolean;
+  walletBalance: number;
+  pendingBalance: number;
+}
+
+export type WalletTransactionType = 'credit' | 'debit';
+export type WalletTransactionStatus = 'available' | 'pending' | 'paid';
+
+export interface WalletTransaction {
+  id: string;
+  artist_id: number;
+  order_id?: number;
+  amount_cents: number;
+  type: WalletTransactionType;
+  status: WalletTransactionStatus;
+  description: string;
+  stripe_transfer_id?: string;
+  created_at: string;
+}
+
 export const payments = {
   /** Create a Stripe PaymentIntent — returns Payment with stripe_client_secret */
   createIntent: (data: { order_id?: number; amount: number; currency?: string }) =>
@@ -550,4 +573,20 @@ export const payments = {
     request<Payment>(`/api/payments/${id}/refund`, { method: "POST", body: JSON.stringify({ reason }) }),
   list: () =>
     request<Payment[]>("/api/payments"),
+  walletMe: () =>
+    request<WalletSnapshot>("/api/payments/wallet/me"),
+  myWalletTransactions: () =>
+    request<WalletTransaction[]>("/api/payments/wallet/my-transactions"),
+  adminWalletTransactions: (artistId?: number) =>
+    request<WalletTransaction[]>(
+      `/api/payments/wallet/admin/transactions${artistId ? `?artist_id=${artistId}` : ''}`,
+    ),
+  requestPayout: (amountCents: number) =>
+    request<{ success: boolean; transferId: string; transactionId: string; userId: number }>(
+      "/api/payments/wallet/payout",
+      {
+        method: "POST",
+        body: JSON.stringify({ amount_cents: amountCents }),
+      },
+    ),
 };

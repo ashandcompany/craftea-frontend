@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
   Box, TrendingUp, MessageSquare, Heart, Palette,
-  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck
+  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck, Wallet
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -59,6 +59,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account", icon: LayoutDashboard, label: "tableau de bord" },
     { href: "/account/settings", icon: User, label: "mon profil" },
     { href: "/account/settings/artist", icon: Palette, label: "profil artiste" },
+    { href: "/account/wallet", icon: Wallet, label: "wallet artiste" },
     { href: "/account/settings/shop", icon: Store, label: "mes boutiques" },
     { href: "/account/products", icon: Box, label: "mes produits" },
     { href: "/account/artist-orders", icon: Truck, label: "commandes reçues" },
@@ -72,6 +73,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account/admin", icon: Shield, label: "administration" },
     { href: "/account/admin/users", icon: Users, label: "utilisateurs" },
     { href: "/account/admin/artists", icon: Palette, label: "artistes" },
+    { href: "/account/admin/wallets", icon: Wallet, label: "wallets" },
     { href: "/account/admin/orders", icon: ShoppingBag, label: "commandes" },
     { href: "/account/admin/categories", icon: FolderOpen, label: "catégories" },
     { href: "/account/admin/tags", icon: Tag, label: "tags" },

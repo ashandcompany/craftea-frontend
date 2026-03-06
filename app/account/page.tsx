@@ -16,7 +16,7 @@ import {
 import {
   Heart, Box, Star, Store, TrendingUp,
   ArrowRight, Package, Settings, MessageSquare, ShoppingBag,
-  Hourglass, Truck
+  Hourglass, Truck, Wallet
 } from "lucide-react";
 import { assetUrl } from "@/lib/utils";
 
@@ -256,6 +256,20 @@ export default function AccountDashboard() {
                       <div>
                         <p className="text-sm text-stone-800">Mes produits</p>
                         <p className="text-[10px] text-stone-400">{productCount ?? 0} produit{(productCount ?? 0) > 1 ? "s" : ""}</p>
+                      </div>
+                    </div>
+                    <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+                  </Link>
+
+                  <Link
+                    href="/account/wallet"
+                    className="group flex items-center justify-between border border-stone-200 p-4 hover:border-stone-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Wallet size={18} className="text-stone-400 group-hover:text-stone-600" />
+                      <div>
+                        <p className="text-sm text-stone-800">Mon wallet artiste</p>
+                        <p className="text-[10px] text-stone-400">solde, historique et retraits</p>
                       </div>
                     </div>
                     <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />
