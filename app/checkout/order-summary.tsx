@@ -1,5 +1,5 @@
 import { Package, Store, Truck, ChevronDown, ChevronUp, Clock, Shield } from "lucide-react";
-import { type Product, type Shop, type ShopShippingProfile } from "@/lib/api";
+import { type Product, type Shop, type ShopShippingProfile, type ShopShippingMethod } from "@/lib/api";
 import { type ShippingZone } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import { useState } from "react";
@@ -15,6 +15,7 @@ interface OrderSummaryProps {
   productMap: Record<number, Product>;
   shopMap: Record<number, Shop>;
   shippingProfiles: Record<number, ShopShippingProfile[]>;
+  shippingMethods: Record<number, ShopShippingMethod[]>;
   subtotal: number;
   totalShipping: number;
   grandTotal: number;
@@ -32,6 +33,7 @@ export function OrderSummary({
   productMap,
   shopMap,
   shippingProfiles,
+  shippingMethods,
   subtotal,
   totalShipping,
   grandTotal,
@@ -73,20 +75,25 @@ export function OrderSummary({
     world: "Monde",
   };
 
-  // Estimation de livraison (simulée)
-  const getDeliveryEstimate = (zone: ShippingZone) => {
-    const estimates = {
-      france: "24-48h",
-      europe: "3-5 jours",
-      world: "7-10 jours",
-    };
-    return estimates[zone] || "5-7 jours";
+  // Méthodes de livraison applicables à la zone sélectionnée, toutes boutiques
+  const methodsForZone = [...shopGroups.keys()]
+    .flatMap((shopId) => shippingMethods[shopId] || [])
+    .filter((m) => m.zones.includes(zone));
+
+  const formatDeliveryTime = (m: ShopShippingMethod) => {
+    const unit = m.delivery_time_unit === "days" ? "j" : "sem.";
+    if (m.delivery_time_min != null && m.delivery_time_max != null) {
+      return `${m.delivery_time_min}–${m.delivery_time_max} ${unit}`;
+    }
+    if (m.delivery_time_min != null) return `${m.delivery_time_min}+ ${unit}`;
+    if (m.delivery_time_max != null) return `≤ ${m.delivery_time_max} ${unit}`;
+    return "—";
   };
 
   return (
     <div 
       className={`
-        border border-sage-200 bg-white p-6 font-mono
+        border-2 border-sage-200 bg-white p-6 font-mono
         ${isCheckoutStep ? "sticky top-24" : ""}
         transition-all duration-300
       `}
@@ -256,13 +263,27 @@ export function OrderSummary({
                 {zoneLabels[zone]}
               </code>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-stone-500">
-              <span className="flex items-center gap-1">
-                <Clock size={10} />
-                Estimation
-              </span>
-              <span>{getDeliveryEstimate(zone)}</span>
-            </div>
+            {methodsForZone.length > 0 ? (
+              <div className="space-y-1">
+                {methodsForZone.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between text-[10px] text-stone-500">
+                    <span className="flex items-center gap-1">
+                      <Clock size={10} />
+                      {m.name}
+                    </span>
+                    <span className="font-mono">{formatDeliveryTime(m)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-[10px] text-stone-400">
+                <span className="flex items-center gap-1">
+                  <Clock size={10} />
+                  Délai
+                </span>
+                <span>—</span>
+              </div>
+            )}
           </div>
 
           {/* Totaux */}

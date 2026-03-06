@@ -48,7 +48,7 @@ export function SavedAddressesList({
 
   return (
     <div 
-      className={`border border-sage-200 bg-white p-6 font-mono relative transition-all duration-300 ${
+      className={`border-2 border-sage-200 bg-white p-6 font-mono relative transition-all duration-300 ${
         isExpanded ? "opacity-100" : "opacity-95"
       }`}
     >

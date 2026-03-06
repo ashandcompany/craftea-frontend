@@ -16,6 +16,7 @@ import {
     type Product,
     type Shop,
     type ShopShippingProfile,
+    type ShopShippingMethod,
     type ShippingZone,
     type Address,
 } from "@/lib/api";
@@ -123,6 +124,9 @@ function CheckoutContent() {
     const [shippingProfiles, setShippingProfiles] = useState<
         Record<number, ShopShippingProfile[]>
     >({});
+    const [shippingMethods, setShippingMethods] = useState<
+        Record<number, ShopShippingMethod[]>
+    >({});
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [step, setStep] = useState<Step>("form");
     const [paymentError, setPaymentError] = useState<PaymentError | null>(null);
@@ -208,9 +212,10 @@ function CheckoutContent() {
                 ];
 
                 if (shopIds.length > 0) {
-                    const [shopResults, shippingResult] = await Promise.allSettled([
+                    const [shopResults, shippingResult, methodsResult] = await Promise.allSettled([
                         Promise.allSettled(shopIds.map((id) => shopsApi.get(id))),
                         shopsApi.getShippingBulk(shopIds),
+                        shopsApi.getShippingMethodsBulk(shopIds),
                     ]);
 
                     const sMap: Record<number, Shop> = {};
@@ -223,6 +228,10 @@ function CheckoutContent() {
 
                     if (shippingResult.status === "fulfilled") {
                         setShippingProfiles(shippingResult.value);
+                    }
+
+                    if (methodsResult.status === "fulfilled") {
+                        setShippingMethods(methodsResult.value);
                     }
                 }
             } catch {
@@ -588,6 +597,7 @@ function CheckoutContent() {
                         productMap={productMap}
                         shopMap={shopMap}
                         shippingProfiles={shippingProfiles}
+                        shippingMethods={shippingMethods}
                         subtotal={subtotal}
                         totalShipping={totalShipping}
                         grandTotal={grandTotal}

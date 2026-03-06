@@ -91,7 +91,7 @@ export function BillingContactForm({
   };
 
   return (
-    <div className="border border-sage-200 bg-white p-6 font-mono relative">
+    <div className="border-2 border-sage-200 bg-white p-6 font-mono relative">
       {/* Header avec effet machine à écrire */}
       <div className="flex items-center gap-2 mb-6 pb-3 border-b border-sage-200">
         <User size={18} className="text-sage-600" strokeWidth={1.5} />
