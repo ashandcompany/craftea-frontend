@@ -111,22 +111,22 @@ export default function HomePage() {
   const separator = "✦";
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-white to-sage-50/30 font-mono">
+    <div className="min-h-screen bg-linear-to-b from-white to-sage-50/30 font-mono transition-colors dark:from-stone-950 dark:to-stone-900">
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-18 py-8 sm:py-12 lg:py-16">
         {/* Hero - responsive */}
-        <section className="mb-16 sm:mb-20 lg:mb-24 border-t border-sage-200 pt-8 sm:pt-12 flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <section className="mb-16 sm:mb-20 lg:mb-24 border-t border-sage-200 pt-8 sm:pt-12 flex flex-col lg:flex-row gap-8 lg:gap-12 dark:border-sage-800/30">
           <div className="space-y-4 sm:space-y-6 flex-1">
-            <p className="font-mono text-xs sm:text-sm text-sage-600">v.01 — édition artisanale</p>
+            <p className="font-mono text-xs sm:text-sm text-sage-600 dark:text-sage-500">v.01 — édition artisanale</p>
             <div className="space-y-3 sm:space-y-4">
-              <h2 className="font-mono text-3xl sm:text-4xl lg:text-5xl leading-tight text-stone-800">
+              <h2 className="font-mono text-3xl sm:text-4xl lg:text-5xl leading-tight text-stone-800 dark:text-stone-200">
                 <span className="relative">
                   {displayText}
-                  <span className={`absolute -right-7 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600`}>_</span>
+                  <span className={`absolute -right-7 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600 dark:text-sage-500`}>_</span>
                 </span>
                 <br />
               </h2>
-              <div className="h-px w-16 sm:w-24 bg-sage-300" />
-              <p className="max-w-xl font-mono text-sm sm:text-base leading-relaxed text-stone-700">
+              <div className="h-px w-16 sm:w-24 bg-sage-300 dark:bg-sage-700" />
+              <p className="max-w-xl font-mono text-sm sm:text-base leading-relaxed text-stone-700 dark:text-stone-400">
                 Des créations uniques, faites main.
                 <br />
                 Bijoux, céramique, textile.
@@ -134,12 +134,12 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
               <Link href="/products" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border border-sage-800 bg-sage-800 px-6 py-2 font-mono text-sm text-white hover:bg-sage-900 transition-colors">
+                <Button className="w-full sm:w-auto rounded-none border border-sage-800 bg-sage-800 px-6 py-2 font-mono text-sm text-white hover:bg-sage-900 transition-colors dark:border-sage-600 dark:bg-sage-600 dark:hover:bg-sage-700">
                   explorer →
                 </Button>
               </Link>
               <Link href="/artists" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border border-sage-600 bg-transparent px-6 py-2 font-mono text-sm text-sage-800 hover:border-sage-800 hover:text-sage-900">
+                <Button className="w-full sm:w-auto rounded-none border border-sage-600 bg-transparent px-6 py-2 font-mono text-sm text-sage-800 hover:border-sage-800 hover:text-sage-900 dark:border-sage-600 dark:text-sage-400 dark:hover:border-sage-500 dark:hover:text-sage-300">
                   artisans
                 </Button>
               </Link>
@@ -149,15 +149,15 @@ export default function HomePage() {
           <div className="relative overflow-hidden flex-1">
             <img
               src={"/hihi.webp"}
-              className="w-full h-auto max-h-100 object-cover border-2 border-sage-200"
+              className="w-full h-auto max-h-100 object-cover border-2 border-sage-200 dark:border-sage-800"
               alt="Artisanat authentique"
             />
-            <div className="absolute inset-0 border-2 border-sage-500/20 pointer-events-none rounded-sm"></div>
+            <div className="absolute inset-0 border-2 border-sage-500/20 pointer-events-none rounded-sm dark:border-sage-400/20"></div>
           </div>
         </section>
 
         {/* Compteurs - responsive grid */}
-        <section className="mb-16 sm:mb-20 lg:mb-24 border-y border-sage-200 bg-sage-50/50 py-6 sm:py-8">
+        <section className="mb-16 sm:mb-20 lg:mb-24 border-y border-sage-200 bg-sage-50/50 py-6 sm:py-8 dark:border-sage-800/30 dark:bg-stone-900/50">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
             {[
               { value: "500+", label: "créations" },
@@ -165,9 +165,9 @@ export default function HomePage() {
               { value: "98%", label: "satisfaction" },
               { value: `${cats.length || "10"}+`, label: "catégories" },
             ].map((stat, index) => (
-              <div key={index} className="space-y-1 border-l-2 border-sage-300 pl-3 sm:pl-4">
-                <p className="font-mono text-xl sm:text-2xl text-sage-800">{stat.value}</p>
-                <p className="font-mono text-xs uppercase tracking-wider text-sage-600">{stat.label}</p>
+              <div key={index} className="space-y-1 border-l-2 border-sage-300 pl-3 sm:pl-4 dark:border-sage-700">
+                <p className="font-mono text-xl sm:text-2xl text-sage-800 dark:text-sage-400">{stat.value}</p>
+                <p className="font-mono text-xs uppercase tracking-wider text-sage-600 dark:text-sage-500">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -176,11 +176,11 @@ export default function HomePage() {
         {/* Catégories - responsive masonry */}
         {cats.length > 0 && (
           <section className="mb-16 sm:mb-20 lg:mb-24">
-            <div className="mb-6 sm:mb-8 flex items-center justify-between border-b border-sage-200 pb-2">
-              <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700">
+            <div className="mb-6 sm:mb-8 flex items-center justify-between border-b border-sage-200 pb-2 dark:border-sage-800/30">
+              <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700 dark:text-sage-400">
                 catégories
               </h3>
-              <Link href="/categories" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors">
+              <Link href="/categories" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors dark:text-sage-400 dark:hover:text-sage-300">
                 tout voir →
               </Link>
             </div>
@@ -191,28 +191,28 @@ export default function HomePage() {
                   <Link
                     key={cat.id}
                     href={`/products?category_id=${cat.id}`}
-                    className="group relative bg-white border border-sage-200 p-4 sm:p-6 transition-all hover:border-sage-400 hover:shadow-lg hover:-translate-y-1"
+                    className="group relative bg-white border border-sage-200 p-4 sm:p-6 transition-all hover:border-sage-400 hover:shadow-lg hover:-translate-y-1 dark:bg-stone-900 dark:border-stone-700 dark:hover:border-sage-700 dark:hover:shadow-black/40"
                   >
-                    <div className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sage-200 rounded-full flex items-center justify-center text-sage-800 text-xs font-bold">
+                    <div className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sage-200 rounded-full flex items-center justify-center text-sage-800 text-xs font-bold dark:bg-stone-700 dark:text-sage-400">
                       {index + 1}
                     </div>
                     <div className="space-y-2 sm:space-y-3">
-                      <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-200 rounded-full flex items-center justify-center text-sage-800">
+                      <div className="w-8 h-8 sm:w-12 sm:h-12 bg-sage-200 rounded-full flex items-center justify-center text-sage-800 dark:bg-stone-700 dark:text-sage-400">
                         {IconComponent ? (
                           <IconComponent strokeWidth={1.5} className="w-5 h-5 sm:w-6 sm:h-6" />
                         ) : (
                           <span className="text-xl sm:text-2xl">✨</span>
                         )}
                       </div>
-                      <h4 className="font-mono text-xs sm:text-sm font-medium text-stone-900 group-hover:text-sage-800">
+                      <h4 className="font-mono text-xs sm:text-sm font-medium text-stone-900 group-hover:text-sage-800 dark:text-stone-200 dark:group-hover:text-sage-400">
                         {cat.name}
                       </h4>
                       {cat.description && (
-                        <p className="font-mono text-xs text-stone-600 line-clamp-2">
+                        <p className="font-mono text-xs text-stone-600 line-clamp-2 dark:text-stone-400">
                           {cat.description}
                         </p>
                       )}
-                      <span className="inline-block text-xs text-sage-800 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="inline-block text-xs text-sage-800 opacity-0 group-hover:opacity-100 transition-opacity dark:text-sage-400">
                         découvrir →
                       </span>
                     </div>
@@ -225,42 +225,42 @@ export default function HomePage() {
 
         {/* Dernières créations - responsive grid */}
         <section className="mb-16 sm:mb-20 lg:mb-24">
-          <div className="mb-6 sm:mb-8 flex items-center justify-between border-b border-sage-200 pb-2">
-            <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700">
+          <div className="mb-6 sm:mb-8 flex items-center justify-between border-b border-sage-200 pb-2 dark:border-sage-800/30">
+            <h3 className="font-mono text-base sm:text-lg uppercase tracking-wider text-sage-700 dark:text-sage-400">
               dernières créations
             </h3>
-            <Link href="/products" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors">
+            <Link href="/products" className="font-mono text-xs text-sage-700 hover:text-sage-800 transition-colors dark:text-sage-400 dark:hover:text-sage-300">
               tout voir →
             </Link>
           </div>
 
           {loading ? (
             <div className="space-y-4 py-8 sm:py-12">
-              <div className="h-4 w-32 animate-pulse bg-sage-200" />
+              <div className="h-4 w-32 animate-pulse bg-sage-200 dark:bg-stone-700" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="space-y-3">
-                    <div className="aspect-square bg-sage-100 animate-pulse" />
-                    <div className="h-3 w-3/4 bg-sage-200 animate-pulse" />
-                    <div className="h-3 w-1/2 bg-sage-200 animate-pulse" />
+                    <div className="aspect-square bg-sage-100 animate-pulse dark:bg-stone-800" />
+                    <div className="h-3 w-3/4 bg-sage-200 animate-pulse dark:bg-stone-700" />
+                    <div className="h-3 w-1/2 bg-sage-200 animate-pulse dark:bg-stone-700" />
                   </div>
                 ))}
               </div>
             </div>
           ) : error ? (
-            <Alert variant={retrying ? "default" : "destructive"} className="rounded-none border border-sage-300 bg-sage-50 font-mono">
+            <Alert variant={retrying ? "default" : "destructive"} className="rounded-none border border-sage-300 bg-sage-50 font-mono dark:border-sage-800 dark:bg-stone-900">
               <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <span className="text-sage-800 text-sm">
+                <span className="text-sage-800 text-sm dark:text-sage-400">
                   {retrying
                     ? error.replace(/dans \d+s/, `dans ${retryCountdown}s`)
                     : error}
                 </span>
                 {retrying ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-sage-500 border-t-transparent" />
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-sage-500 border-t-transparent dark:border-sage-400" />
                 ) : (
                   <Button
                     onClick={() => window.location.reload()}
-                    className="rounded-none border border-sage-700 bg-transparent px-4 py-1 font-mono text-xs text-sage-700 hover:bg-sage-700 hover:text-white"
+                    className="rounded-none border border-sage-700 bg-transparent px-4 py-1 font-mono text-xs text-sage-700 hover:bg-sage-700 hover:text-white dark:border-sage-600 dark:text-sage-400 dark:hover:bg-sage-600 dark:hover:text-white"
                   >
                     réessayer
                   </Button>
@@ -268,15 +268,15 @@ export default function HomePage() {
               </AlertDescription>
             </Alert>
           ) : latestProducts.length === 0 ? (
-            <div className="border border-sage-200 bg-sage-50 py-16 sm:py-20 text-center font-mono text-sage-600">
+            <div className="border border-sage-200 bg-sage-50 py-16 sm:py-20 text-center font-mono text-sage-600 dark:border-stone-700 dark:bg-stone-900 dark:text-sage-500">
               <p>— aucun produit pour le moment —</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {latestProducts.map((product, index) => (
                 <div key={product.id} className="group space-y-3">
-                  <div className="relative border border-sage-200 bg-white p-3 sm:p-4 pb-4 sm:pb-6 transition-all group-hover:border-sage-400 group-hover:shadow-md">
-                    <span className="absolute top-2 left-2 font-mono text-xs text-sage-600 bg-sage-50 px-2 py-1">
+                  <div className="relative border border-sage-200 bg-white p-3 sm:p-4 pb-4 sm:pb-6 transition-all group-hover:border-sage-400 group-hover:shadow-md dark:border-stone-700 dark:bg-stone-900 dark:group-hover:border-sage-700 dark:group-hover:shadow-black/40">
+                    <span className="absolute top-2 left-2 font-mono text-xs text-sage-600 bg-sage-50 px-2 py-1 dark:text-sage-400 dark:bg-stone-800">
                       #{String(index + 1).padStart(2, '0')}
                     </span>
                     <ProductCard product={product} />
@@ -288,41 +288,41 @@ export default function HomePage() {
         </section>
 
         {/* CTA - responsive avec nouvelle palette */}
-        <section className="relative overflow-hidden border-2 border-sage-300 bg-linear-to-br from-sage-50 to-white p-8 sm:p-12 lg:p-16 text-center">
+        <section className="relative overflow-hidden border-2 border-sage-300 bg-linear-to-br from-sage-50 to-white p-8 sm:p-12 lg:p-16 text-center dark:border-sage-800 dark:from-stone-900 dark:to-stone-950">
           {/* Éléments décoratifs */}
-          <div className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-sage-200/20 rounded-full -translate-x-12 sm:-translate-x-16 -translate-y-12 sm:-translate-y-16"></div>
-          <div className="absolute bottom-0 right-0 w-36 sm:w-48 h-36 sm:h-48 bg-sage-200/20 rounded-full translate-x-16 sm:translate-x-24 translate-y-16 sm:translate-y-24"></div>
+          <div className="absolute top-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-sage-200/20 rounded-full -translate-x-12 sm:-translate-x-16 -translate-y-12 sm:-translate-y-16 dark:bg-sage-800/10"></div>
+          <div className="absolute bottom-0 right-0 w-36 sm:w-48 h-36 sm:h-48 bg-sage-200/20 rounded-full translate-x-16 sm:translate-x-24 translate-y-16 sm:translate-y-24 dark:bg-sage-800/10"></div>
 
           <div className="relative space-y-4 sm:space-y-6">
-            <div className="flex justify-center gap-2 text-sage-700">
-              <span className="text-xl sm:text-2xl]">✦</span>
+            <div className="flex justify-center gap-2 text-sage-700 dark:text-sage-500">
+              <span className="text-xl sm:text-2xl">✦</span>
               <span className="font-mono mt-2 text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em]">appel aux artisans</span>
               <span className="text-xl sm:text-2xl">✦</span>
             </div>
 
-            <h4 className="font-mono text-2xl sm:text-3xl text-stone-800">
-              Vous êtes <span className="text-sage-700 italic">artisan</span> ?
+            <h4 className="font-mono text-2xl sm:text-3xl text-stone-800 dark:text-stone-200">
+              Vous êtes <span className="text-sage-700 italic dark:text-sage-500">artisan</span> ?
             </h4>
 
-            <p className="mx-auto max-w-md font-mono text-xs sm:text-sm text-stone-700 px-4">
+            <p className="mx-auto max-w-md font-mono text-xs sm:text-sm text-stone-700 px-4 dark:text-stone-400">
               Rejoignez notre communauté et partagez vos créations uniques avec des milliers de passionnés.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-4 px-4">
               <Link href="/register" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border-2 border-sage-700 bg-sage-700 px-6 sm:px-10 py-3 sm:py-4 font-mono text-sm text-white hover:bg-sage-800 transition-all hover:scale-105">
+                <Button className="w-full sm:w-auto rounded-none border-2 border-sage-700 bg-sage-700 px-6 sm:px-10 py-3 sm:py-4 font-mono text-sm text-white hover:bg-sage-800 transition-all hover:scale-105 dark:border-sage-600 dark:bg-sage-600 dark:hover:bg-sage-700">
                   démarrer l'aventure →
                 </Button>
               </Link>
               <Link href="/about" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-none border-2 border-sage-300 bg-transparent px-6 sm:px-8 py-3 sm:py-4 font-mono text-sm text-sage-700 hover:border-sage-700 hover:text-sage-800 transition-all">
+                <Button className="w-full sm:w-auto rounded-none border-2 border-sage-300 bg-transparent px-6 sm:px-8 py-3 sm:py-4 font-mono text-sm text-sage-700 hover:border-sage-700 hover:text-sage-800 transition-all dark:border-sage-700 dark:text-sage-400 dark:hover:border-sage-600 dark:hover:text-sage-300">
                   en savoir plus
                 </Button>
               </Link>
             </div>
 
             {/* Témoignage minimal */}
-            <p className="text-xs text-sage-700 italic mt-6 sm:mt-8">
+            <p className="text-xs text-sage-700 italic mt-6 sm:mt-8 dark:text-sage-500">
               "Déjà plus de 50 artisans nous ont rejoints"
             </p>
           </div>
