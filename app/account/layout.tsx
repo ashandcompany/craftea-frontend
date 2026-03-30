@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { assetUrl } from "@/lib/utils";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
   Box, TrendingUp, MessageSquare, Heart, Palette,
@@ -88,8 +89,16 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
           {/* User info */}
           <div className="mb-6 border border-stone-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-stone-300 bg-stone-50 text-sm uppercase text-stone-600">
-                {user.firstname?.[0] || "U"}{user.lastname?.[0] || ""}
+              <div className="flex h-10 w-10 items-center justify-center border border-stone-300 bg-stone-50 text-sm uppercase text-stone-600 overflow-hidden">
+                {user.avatar_url ? (
+                  <img
+                    src={assetUrl(user.avatar_url, "user-images")}
+                    alt={`${user.firstname?.[0] || ""}${user.lastname?.[0] || ""}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{user.firstname?.[0] || "U"}{user.lastname?.[0] || ""}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-stone-800 truncate">

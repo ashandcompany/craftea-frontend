@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { categories as categoriesApi, favorites as favoritesApi, type Category } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 import { useCart } from "@/lib/cart-context";
 import { useTheme } from "@/lib/theme-context";
 import {
@@ -359,7 +360,7 @@ export function Navbar() {
                   }}
                 >
                   <button
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                    className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium transition-colors ms-4 ${
                       userMenuOpen
                         ? "bg-stone-200 text-stone-900 dark:bg-stone-700 dark:text-stone-100"
                         : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700"
@@ -368,7 +369,15 @@ export function Navbar() {
                     aria-haspopup="true"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                   >
-                    {getInitials()}
+                    {user.avatar_url ? (
+                      <img
+                        src={assetUrl(user.avatar_url, "user-images")}
+                        alt={getInitials()}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getInitials()
+                    )}
                   </button>
 
                   {/* User dropdown */}
