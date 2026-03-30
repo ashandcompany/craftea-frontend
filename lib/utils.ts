@@ -5,7 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-type AssetBucket = "artist-images" | "product-images"
+export const COMMISSION = {
+  RATE: 0.075,      // 7.5%
+  FIXED_EUR: 0.15,  // 0.15€
+} as const;
+
+/** Calcule la commission plateforme en euros pour un montant en euros. */
+export function calculateFeeEur(amountEur: number): number {
+  return amountEur * COMMISSION.RATE + COMMISSION.FIXED_EUR;
+}
+
+type AssetBucket = "artist-images" | "product-images" | "user-images"
 
 const MINIO_BASE_URL = (process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000").replace(/\/+$/, "")
 

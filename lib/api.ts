@@ -61,6 +61,7 @@ export interface User {
   lastname: string;
   email: string;
   is_active: boolean;
+  avatar_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -86,6 +87,11 @@ export const users = {
   get: (id: number) => request<User>(`/api/users/${id}`),
   update: (id: number, data: Partial<Pick<User, "firstname" | "lastname" | "email">>) =>
     request<User>(`/api/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  uploadAvatar: (id: number, file: File) => {
+    const form = new FormData();
+    form.append("avatar", file);
+    return request<User>(`/api/users/${id}/avatar`, { method: "PATCH", body: form });
+  },
   toggleActive: (id: number) =>
     request<User>(`/api/users/${id}/toggle-active`, { method: "PATCH" }),
   changeRole: (id: number, role: User["role"]) =>

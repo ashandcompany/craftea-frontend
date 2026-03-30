@@ -7,8 +7,9 @@ import {
     addresses as addressesApi,
     type Address,
 } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Pencil, X, Plus, Loader, User } from "lucide-react";
+import { Pencil, X, Plus, Loader, User, Camera } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function SettingsProfilePage() {
@@ -19,6 +20,9 @@ export default function SettingsProfilePage() {
     const [profileForm, setProfileForm] = useState({ firstname: "", lastname: "", email: "" });
     const [profileError, setProfileError] = useState("");
     const [profileSaving, setProfileSaving] = useState(false);
+
+    // Addresses
+    const [avatarUploading, setAvatarUploading] = useState(false);
 
     // Addresses
     const [addressList, setAddressList] = useState<Address[]>([]);
@@ -51,6 +55,19 @@ export default function SettingsProfilePage() {
             setProfileError(err.message || "Erreur");
         } finally {
             setProfileSaving(false);
+        }
+    };
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+        setAvatarUploading(true);
+        try {
+            await users.uploadAvatar(user.id, file);
+            window.location.reload();
+        } catch {
+        } finally {
+            setAvatarUploading(false);
         }
     };
 
@@ -122,8 +139,32 @@ export default function SettingsProfilePage() {
                 <div className="border-b border-stone-200 bg-stone-50 p-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center border border-stone-300 bg-white text-sm uppercase text-stone-600">
-                                {user.firstname?.[0] || "U"}{user.lastname?.[0] || ""}
+                            <div className="relative group">
+                                <div className="flex h-12 w-12 items-center justify-center border border-stone-300 bg-white text-sm uppercase text-stone-600 overflow-hidden">
+                                    {user.avatar_url ? (
+                                        <img
+                                            src={assetUrl(user.avatar_url, "user-images")}
+                                            alt="avatar"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{user.firstname?.[0] || "U"}{user.lastname?.[0] || ""}</span>
+                                    )}
+                                </div>
+                                <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {avatarUploading ? (
+                                        <Loader size={14} className="animate-spin text-white" />
+                                    ) : (
+                                        <Camera size={14} className="text-white" />
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleAvatarChange}
+                                        disabled={avatarUploading}
+                                    />
+                                </label>
                             </div>
                             <div>
                                 <h2 className="text-lg text-stone-800">

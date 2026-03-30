@@ -9,7 +9,7 @@ import {
   type Order,
   OrderStatus,
 } from "@/lib/api";
-import { assetUrl } from "@/lib/utils";
+import { assetUrl, calculateFeeEur, COMMISSION } from "@/lib/utils";
 import { User, Calendar, Package, Truck, AlertTriangle, Check, Loader2, ChevronDown, Search, Hourglass } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 
@@ -277,14 +277,14 @@ export default function ArtistOrdersPage() {
                   <div className="flex items-center gap-1.5 text-[11px] text-rose-400">
                     <AlertTriangle size={10} strokeWidth={1.5} />
                     <span className="font-mono">
-                      − commission site (7,5 %) : {(Number(order.total) * 0.075).toFixed(2)} €
+                      − commission site ({COMMISSION.RATE * 100} % + {COMMISSION.FIXED_EUR.toFixed(2)} €) : {calculateFeeEur(Number(order.total)).toFixed(2)} €
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-mono">
                     <Check size={10} strokeWidth={2} />
                     <span className="font-medium">
-                      votre part : {(Number(order.total) * 0.925).toFixed(2)} €
+                      votre part : {(Number(order.total) - calculateFeeEur(Number(order.total))).toFixed(2)} €
                     </span>
                   </div>
                 </div>
