@@ -8,7 +8,17 @@ import {
   OrderStatus,
 } from "@/lib/api";
 import {
-  ShoppingBag, Hourglass, Package, ChevronDown,
+  ShoppingBag,
+  Hourglass,
+  Package,
+  ChevronDown,
+  User,
+  Calendar,
+  Truck,
+  AlertTriangle,
+  Check,
+  Loader2,
+  X,
 } from "lucide-react";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
@@ -21,12 +31,12 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
 ];
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
-  [OrderStatus.PENDING]: "bg-amber-50 text-amber-700 border-amber-200",
-  [OrderStatus.CONFIRMED]: "bg-blue-50 text-blue-700 border-blue-200",
-  [OrderStatus.PREPARING]: "bg-purple-50 text-purple-700 border-purple-200",
-  [OrderStatus.SHIPPED]: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  [OrderStatus.DELIVERED]: "bg-green-50 text-green-700 border-green-200",
-  [OrderStatus.CANCELLED]: "bg-stone-50 text-stone-500 border-stone-200",
+  [OrderStatus.PENDING]: "border-amber-300 bg-amber-100 text-amber-700",
+  [OrderStatus.CONFIRMED]: "border-sage-300 bg-sage-100 text-sage-700",
+  [OrderStatus.PREPARING]: "border-purple-300 bg-purple-100 text-purple-700",
+  [OrderStatus.SHIPPED]: "border-blue-300 bg-blue-100 text-blue-700",
+  [OrderStatus.DELIVERED]: "border-emerald-300 bg-emerald-100 text-emerald-700",
+  [OrderStatus.CANCELLED]: "border-stone-200 bg-stone-100 text-stone-500",
 };
 
 export default function MyOrdersPage() {
@@ -35,10 +45,12 @@ export default function MyOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<Record<number, OrderStatus>>({});
 
   useEffect(() => {
     if (!user) return;
-    ordersApi.my()
+    ordersApi
+      .my()
       .then(setOrdersList)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -52,103 +64,180 @@ export default function MyOrdersPage() {
     try {
       const updated = await ordersApi.updateStatus(order.id, OrderStatus.CANCELLED);
       setOrdersList((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setCancelLoading(null);
   };
 
-  const filtered = ordersList.filter((o) =>
-    statusFilter === "all" || o.status === statusFilter
-  );
+  const filtered = ordersList.filter((o) => statusFilter === "all" || o.status === statusFilter);
 
   const formatDate = (dateString: string) =>
     new Date(dateString.replace(" ", "T")).toLocaleDateString("fr-FR", {
-      year: "numeric", month: "long", day: "numeric",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
+  const formatTime = (dateString: string) =>
+    new Date(dateString.replace(" ", "T")).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const getOrderStats = () => {
+    const total = ordersList.length;
+    const pending = ordersList.filter((o) => o.status === OrderStatus.PENDING).length;
+    const delivered = ordersList.filter((o) => o.status === OrderStatus.DELIVERED).length;
+    const totalSpent = ordersList
+      .filter((o) => o.status !== OrderStatus.CANCELLED)
+      .reduce((sum, o) => sum + Number(o.total), 0);
+    return { total, pending, delivered, totalSpent };
+  };
+
+  const stats = getOrderStats();
+
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <ShoppingBag size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">
-            Mes commandes
+    <div className="font-mono">
+      {/* Header - style machine à écrire */}
+      <div className="mb-8 border-b-2 border-sage-200 pb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <ShoppingBag size={20} className="text-sage-600" strokeWidth={1.5} />
+          <h1 className="text-2xl font-light tracking-tight text-stone-900 font-mono">
+            &gt; MES COMMANDES
           </h1>
         </div>
-        <p className="mt-1 text-sm text-stone-500">
-          — {ordersList.length} commande{ordersList.length > 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center gap-4 text-sm text-stone-500 mt-2">
+          <p className="flex items-center gap-1.5">
+            <span className="text-sage-600">[</span>
+            {stats.total} commande{stats.total > 1 ? "s" : ""}
+            <span className="text-sage-600">]</span>
+          </p>
+          {stats.pending > 0 && (
+            <p className="flex items-center gap-1.5 text-xs text-amber-600">
+              <AlertTriangle size={12} strokeWidth={1.5} />
+              {stats.pending} en attente
+            </p>
+          )}
+          {stats.delivered > 0 && (
+            <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+              <Check size={12} strokeWidth={1.5} />
+              {stats.delivered} livrée{stats.delivered > 1 ? "s" : ""}
+            </p>
+          )}
+          <p className="flex items-center gap-1.5 text-xs text-sage-600 ml-auto">
+            total dépensé : {stats.totalSpent.toFixed(2)} €
+          </p>
+        </div>
       </div>
 
-      {/* Filter */}
+      {/* Filter - style machine à écrire */}
       {ordersList.length > 0 && (
         <div className="mb-6">
           <div className="relative inline-block">
+            <label className="text-[10px] text-stone-400 uppercase tracking-wider mr-2">
+              [ filtre ]
+            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="appearance-none border border-stone-200 px-3 py-2 pr-8 text-sm text-stone-700 focus:outline-none focus:border-stone-400 bg-white"
+              className="appearance-none border-2 border-sage-200 bg-white px-3 py-2 pr-8 text-xs font-mono text-stone-600 
+                         focus:outline-none focus:border-sage-400 transition-colors hover:border-sage-300"
             >
               <option value="all">tous les statuts</option>
               {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
           </div>
         </div>
       )}
 
+      {/* Loading state */}
       {loading ? (
-        <div className="py-16 text-center text-stone-400">
-          <div className="inline-block h-5 w-5 animate-pulse"><Hourglass /></div>
-          <p className="mt-2 text-sm">chargement...</p>
+        <div className="py-16 text-center text-stone-400 border-2 border-sage-200 bg-white p-8">
+          <div className="inline-flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin text-sage-500" strokeWidth={1.5} />
+            <span className="text-xs font-mono tracking-wide">chargement...</span>
+          </div>
         </div>
       ) : ordersList.length === 0 ? (
-        <div className="py-16 text-center text-stone-400">
-          <Package size={28} className="mx-auto mb-3 text-stone-300" />
-          <p className="text-sm">aucune commande pour le moment</p>
-          <p className="text-[10px] mt-1">vos achats apparaîtront ici</p>
+        <div className="py-16 text-center border-2 border-sage-200 bg-white p-8">
+          <Package size={32} className="mx-auto mb-4 text-sage-300" strokeWidth={1.5} />
+          <p className="text-sm font-mono text-stone-500">[ aucune commande ]</p>
+          <p className="text-[10px] font-mono text-stone-400 mt-2">vos achats apparaîtront ici</p>
+          <div className="mt-4 text-sage-300 text-[10px]">⏎</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center text-stone-400">
-          <Package size={28} className="mx-auto mb-3 text-stone-300" />
-          <p className="text-sm">aucune commande avec ce statut</p>
+        <div className="py-16 text-center border-2 border-sage-200 bg-white p-8">
+          <Package size={32} className="mx-auto mb-4 text-sage-300" strokeWidth={1.5} />
+          <p className="text-sm font-mono text-stone-500">[ aucun résultat ]</p>
+          <p className="text-[10px] font-mono text-stone-400 mt-2">aucune commande avec ce statut</p>
         </div>
       ) : (
         <div className="space-y-4">
           {filtered.map((order) => (
-            <div key={order.id} className="border border-stone-200">
+            <div
+              key={order.id}
+              className={`border-2 font-mono transition-all duration-200 relative ${
+                order.status === OrderStatus.PENDING
+                  ? "border-amber-200 bg-amber-50/10"
+                  : "border-sage-200 bg-white"
+              }`}
+            >
               {/* Order header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-mono text-stone-500">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 border-b border-sage-100 bg-sage-50/30">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-sm font-mono text-stone-600 tracking-wide">
                     #{String(order.id).padStart(4, "0")}
                   </span>
-                  <span className="text-[10px] text-stone-400">
-                    {formatDate(order.created_at)}
-                  </span>
+                  <div className="flex items-center gap-1 text-[10px] text-stone-400">
+                    <Calendar size={10} strokeWidth={1.5} />
+                    <span>{formatDate(order.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-stone-400">
+                    <Hourglass size={10} strokeWidth={1.5} />
+                    <span>{formatTime(order.created_at)}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`inline-block border px-2 py-0.5 text-[10px] ${STATUS_COLORS[order.status] || "bg-stone-50 text-stone-500 border-stone-200"}`}>
+                  <span
+                    className={`inline-block border px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider ${
+                      STATUS_COLORS[order.status] || "border-stone-200 bg-stone-100 text-stone-600"
+                    }`}
+                  >
                     {STATUS_OPTIONS.find((s) => s.value === order.status)?.label || order.status}
                   </span>
                 </div>
               </div>
 
               {/* Items */}
-              <div className="divide-y divide-stone-50">
-                {order.items?.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between px-4 py-2.5">
-                    <div>
-                      <p className="text-sm text-stone-700">
-                        Produit #{item.product_id}
-                      </p>
-                      <p className="text-[10px] text-stone-400">
-                        {item.quantity} × {Number(item.price).toFixed(2)} €
-                      </p>
+              <div className="divide-y divide-sage-50">
+                {order.items?.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-sage-50/30 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Package size={12} className="text-sage-400 shrink-0" strokeWidth={1.5} />
+                        <p className="text-sm text-stone-700 font-mono truncate">
+                          Produit #{item.product_id}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-stone-400 font-mono border border-sage-100 px-1.5 py-0.5">
+                          x{item.quantity}
+                        </span>
+                        <span className="text-[10px] text-stone-400">
+                          {Number(item.price).toFixed(2)} €/u
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-sm text-stone-800">
+                    <p className="text-sm font-mono text-stone-800 ml-4 shrink-0">
                       {(Number(item.price) * item.quantity).toFixed(2)} €
                     </p>
                   </div>
@@ -156,20 +245,64 @@ export default function MyOrdersPage() {
               </div>
 
               {/* Order footer */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-stone-200 bg-stone-50">
-                <p className="text-sm font-medium text-stone-800">
-                  Total : {Number(order.total).toFixed(2)} €
-                </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 border-t-2 border-sage-100 bg-sage-50/20">
+                <div className="flex flex-col gap-1">
+                  {Number(order.shipping_total) > 0 && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
+                      <Truck size={11} strokeWidth={1.5} />
+                      <span className="font-mono">
+                        dont {Number(order.shipping_total).toFixed(2)} € de frais de port
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-xs font-mono text-stone-500">Total TTC :</span>
+                    <span className="text-base font-mono font-medium text-sage-800">
+                      {Number(order.total).toFixed(2)} €
+                    </span>
+                  </div>
+                </div>
+
                 {order.status === OrderStatus.PENDING && (
                   <button
                     onClick={() => handleCancel(order)}
                     disabled={cancelLoading === order.id}
-                    className="border border-red-200 px-3 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                    className="group flex items-center gap-1.5 border-2 border-red-200 px-3 py-1.5 text-xs font-mono 
+                               text-red-600 hover:border-red-300 hover:bg-red-50 
+                               disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
-                    annuler
+                    {cancelLoading === order.id ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <>
+                        <X size={12} strokeWidth={1.5} />
+                        <span className="uppercase tracking-wider">annuler</span>
+                      </>
+                    )}
                   </button>
                 )}
+
+                {order.status === OrderStatus.DELIVERED && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 border border-emerald-200 px-2 py-1">
+                    <Check size={10} strokeWidth={2} />
+                    <span className="font-mono">commande livrée</span>
+                  </div>
+                )}
+
+                {order.status === OrderStatus.SHIPPED && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-blue-600">
+                    <Truck size={10} strokeWidth={1.5} />
+                    <span className="font-mono">en cours de livraison</span>
+                  </div>
+                )}
               </div>
+
+              {/* Effet machine à écrire pour les commandes en attente */}
+              {order.status === OrderStatus.PENDING && (
+                <div className="absolute right-3 bottom-2 text-[8px] text-amber-300 select-none pointer-events-none">
+                  ⏎
+                </div>
+              )}
             </div>
           ))}
         </div>
