@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
     Loader, Check, ImageIcon, Store, ArrowLeft, Trash2, Box, Truck,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 import { assetUrl } from "@/lib/utils";
 
 export default function ShopDetailPage() {
@@ -119,9 +120,7 @@ export default function ShopDetailPage() {
     if (user.role !== "artist") {
         return (
             <div>
-                <div className="mb-8 border-b border-stone-200 pb-6">
-                    <h1 className="text-2xl font-light tracking-tight text-stone-900">Boutique</h1>
-                </div>
+                <AccountPageHeader icon={Store} title="> Boutique" />
                 <div className="border border-dashed border-stone-300 p-12 text-center">
                     <Store size={28} className="mx-auto text-stone-300 mb-3" />
                     <p className="text-sm text-stone-600">Section réservée aux artistes</p>
@@ -133,36 +132,33 @@ export default function ShopDetailPage() {
     return (
         <div>
             {/* Header */}
-            <div className="mb-8 border-b border-stone-200 pb-6">
-                <Link
-                    href="/account/settings/shop"
-                    className="mb-3 inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-700"
-                >
-                    <ArrowLeft size={12} /> toutes les boutiques
-                </Link>
-                <h1 className="text-2xl font-light tracking-tight text-stone-900">
-                    {loading ? "Boutique" : shop?.name || "Boutique sans nom"}
-                </h1>
-                {shop && (
-                    <div className="mt-1 flex items-center gap-3 text-sm text-stone-500">
-                        <span>{"—"} créée le {formatDate(shop.created_at)}</span>
-                        <span className="text-stone-300">|</span>
-                        <Link
-                            href={`/account/products`}
-                            className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
-                        >
-                            <Box size={12} /> {productCount} produit{productCount > 1 ? "s" : ""}
-                        </Link>
-                        <span className="text-stone-300">|</span>
-                        <Link
-                            href={`/account/settings/shop/${shopId}/shipping`}
-                            className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800"
-                        >
-                            <Truck size={12} /> frais de port
-                        </Link>
-                    </div>
-                )}
-            </div>
+            <AccountPageHeader
+                icon={Store}
+                title={loading ? "> Boutique" : `> ${shop?.name || "Boutique sans nom"}`}
+                backHref="/account/settings/shop"
+                backLabel="toutes les boutiques"
+                description={
+                    shop ? (
+                        <span className="flex items-center gap-3">
+                            <span>— créée le {formatDate(shop.created_at)}</span>
+                            <span className="text-stone-300">|</span>
+                            <Link
+                                href="/account/products"
+                                className="inline-flex items-center gap-1 hover:text-stone-800"
+                            >
+                                <Box size={12} /> {productCount} produit{productCount > 1 ? "s" : ""}
+                            </Link>
+                            <span className="text-stone-300">|</span>
+                            <Link
+                                href={`/account/settings/shop/${shopId}/shipping`}
+                                className="inline-flex items-center gap-1 hover:text-stone-800"
+                            >
+                                <Truck size={12} /> frais de port
+                            </Link>
+                        </span>
+                    ) : undefined
+                }
+            />
 
             {loading ? (
                 <div className="py-16 text-center text-stone-400">

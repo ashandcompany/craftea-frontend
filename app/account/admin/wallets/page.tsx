@@ -10,6 +10,7 @@ import {
   type WalletTransaction,
 } from "@/lib/api";
 import { Wallet, Loader, Search, Banknote, Landmark } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 function centsToEuro(cents: number) {
   return (cents / 100).toLocaleString("fr-FR", {
@@ -87,13 +88,7 @@ export default function AdminWalletsPage() {
 
   return (
     <div>
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="mb-1 flex items-center gap-3">
-          <Wallet size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">Wallets artistes</h1>
-        </div>
-        <p className="mt-1 text-sm text-stone-500">— vue admin des soldes et flux de retrait</p>
-      </div>
+      <AccountPageHeader icon={Wallet} title="> Wallets artistes" description="— vue admin des soldes et flux de retrait" />
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">

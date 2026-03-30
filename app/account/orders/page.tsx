@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   orders as ordersApi,
+  products as productsApi,
   type Order,
   OrderStatus,
 } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 import {
   ShoppingBag,
   Hourglass,
@@ -20,6 +22,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: OrderStatus.PENDING, label: "en attente" },
@@ -46,12 +49,24 @@ export default function MyOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<Record<number, OrderStatus>>({});
+  const [productMap, setProductMap] = useState<Record<number, { title: string; imageUrl: string }>>({})
 
   useEffect(() => {
     if (!user) return;
     ordersApi
       .my()
-      .then(setOrdersList)
+      .then(async (fetchedOrders) => {
+        setOrdersList(fetchedOrders);
+        const uniqueIds = [...new Set(fetchedOrders.flatMap((o) => o.items.map((i) => i.product_id)))];
+        const entries = await Promise.all(
+          uniqueIds.map((id) =>
+            productsApi.get(id)
+              .then((p) => [id, { title: p.title ?? `Produit #${id}`, imageUrl: assetUrl(p.images?.[0]?.image_url, "product-images") }] as const)
+              .catch(() => [id, { title: `Produit #${id}`, imageUrl: "" }] as const)
+          )
+        );
+        setProductMap(Object.fromEntries(entries));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
@@ -99,14 +114,8 @@ export default function MyOrdersPage() {
 
   return (
     <div className="font-mono">
-      {/* Header - style machine à écrire */}
-      <div className="mb-8 border-b-2 border-sage-200 pb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <ShoppingBag size={20} className="text-sage-600" strokeWidth={1.5} />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900 font-mono">
-            &gt; MES COMMANDES
-          </h1>
-        </div>
+      {/* Header */}
+      <AccountPageHeader icon={ShoppingBag} title="> MES COMMANDES">
         <div className="flex items-center gap-4 text-sm text-stone-500 mt-2">
           <p className="flex items-center gap-1.5">
             <span className="text-sage-600">[</span>
@@ -129,9 +138,9 @@ export default function MyOrdersPage() {
             total dépensé : {stats.totalSpent.toFixed(2)} €
           </p>
         </div>
-      </div>
+      </AccountPageHeader>
 
-      {/* Filter - style machine à écrire */}
+      {/* Filter */}
       {ordersList.length > 0 && (
         <div className="mb-6">
           <div className="relative inline-block">
@@ -221,20 +230,33 @@ export default function MyOrdersPage() {
                     key={item.id}
                     className="flex items-center justify-between px-4 py-3 hover:bg-sage-50/30 transition-colors"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Package size={12} className="text-sage-400 shrink-0" strokeWidth={1.5} />
-                        <p className="text-sm text-stone-700 font-mono truncate">
-                          Produit #{item.product_id}
-                        </p>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {/* Thumbnail */}
+                      <div className="w-10 h-10 shrink-0 border border-sage-100 bg-stone-50 overflow-hidden">
+                        {productMap[item.product_id]?.imageUrl ? (
+                          <img
+                            src={productMap[item.product_id].imageUrl}
+                            alt={productMap[item.product_id].title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package size={14} className="text-stone-300" strokeWidth={1.5} />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-stone-400 font-mono border border-sage-100 px-1.5 py-0.5">
-                          x{item.quantity}
-                        </span>
-                        <span className="text-[10px] text-stone-400">
-                          {Number(item.price).toFixed(2)} €/u
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-stone-700 font-mono truncate">
+                          {productMap[item.product_id]?.title || `Produit #${item.product_id}`}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-stone-400 font-mono border border-sage-100 px-1.5 py-0.5">
+                            x{item.quantity}
+                          </span>
+                          <span className="text-[10px] text-stone-400">
+                            {Number(item.price).toFixed(2)} €/u
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <p className="text-sm font-mono text-stone-800 ml-4 shrink-0">

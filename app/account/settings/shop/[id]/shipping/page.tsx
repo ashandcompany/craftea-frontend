@@ -23,6 +23,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 type ShippingZoneLabel = "france" | "europe" | "world";
 
@@ -297,20 +298,13 @@ export default function ShopShippingPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center gap-2">
-        <Link
-          href={`/account/settings/shop/${shopId}`}
-          className="text-stone-400 hover:text-stone-600"
-        >
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">
-            Frais de port
-          </h1>
-          <p className="text-xs text-stone-500 mt-0.5">{shop.name}</p>
-        </div>
-      </div>
+      <AccountPageHeader
+        icon={Truck}
+        title="> Frais de port"
+        backHref={`/account/settings/shop/${shopId}`}
+        backLabel={shop.name}
+        description={`— paramètres de livraison pour ${shop.name}`}
+      />
 
       {error && (
         <Alert className="mb-6 border-red-200 bg-red-50">

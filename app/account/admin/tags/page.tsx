@@ -10,6 +10,7 @@ import {
 import {
   Tag as TagIcon, Hourglass, Plus, Trash2, X, Check,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function AdminTagsPage() {
   const { user } = useAuth();
@@ -66,19 +67,11 @@ export default function AdminTagsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <TagIcon size={20} className="text-stone-400" />
-              <h1 className="text-2xl font-light tracking-tight text-stone-900">
-                Tags
-              </h1>
-            </div>
-            <p className="mt-1 text-sm text-stone-500">
-              — {tagsList.length} tag{tagsList.length > 1 ? "s" : ""}
-            </p>
-          </div>
+      <AccountPageHeader
+        icon={TagIcon}
+        title="> Tags"
+        description={`— ${tagsList.length} tag${tagsList.length > 1 ? "s" : ""}`}
+        action={
           <button
             onClick={() => setShowCreate(!showCreate)}
             className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-3 py-1.5 text-xs text-stone-50 hover:bg-stone-700 transition-colors"
@@ -86,8 +79,8 @@ export default function AdminTagsPage() {
             <Plus size={14} />
             ajouter
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Create form */}
       {showCreate && (

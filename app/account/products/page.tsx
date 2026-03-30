@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Pencil, X, Package, Search, Loader, ChevronUp, ChevronDown } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 import { useAuth } from "@/lib/auth-context";
 import {
   artists as artistsApi,
@@ -439,21 +440,19 @@ export default function AccountProductsPage() {
 
   return (
     <div className="font-mono">
-      {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-light tracking-tight text-stone-900">Mes produits</h1>
-            <p className="mt-1 text-sm text-stone-500">— gestion du catalogue</p>
-          </div>
+      <AccountPageHeader
+        icon={Package}
+        title="> Mes produits"
+        description="— gestion du catalogue"
+        action={
           <button
             onClick={() => openModal()}
             className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700"
           >
             <span className="text-sm">+</span> nouveau produit
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters bar */}
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">

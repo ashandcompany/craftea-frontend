@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader, Check, ImageIcon, Palette } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 import { assetUrl } from "@/lib/utils";
 
 type SocialLinks = {
@@ -198,10 +199,7 @@ export default function ArtistSettingsPage() {
     return (
         <div>
             {/* Header */}
-            <div className="mb-8 border-b border-stone-200 pb-6">
-                <h1 className="text-2xl font-light tracking-tight text-stone-900">Profil artiste</h1>
-                <p className="mt-1 text-sm text-stone-500">{"—"} bio, réseaux sociaux et visuels</p>
-            </div>
+            <AccountPageHeader icon={Palette} title="> Profil artiste" description="— bio, réseaux sociaux et visuels" />
 
             {loading ? (
                 <div className="py-16 text-center text-stone-400">

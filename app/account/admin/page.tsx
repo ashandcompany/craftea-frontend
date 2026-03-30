@@ -22,6 +22,7 @@ import {
   ArrowRight, Hourglass, Shield, AlertTriangle,
   Clock, Wallet,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -69,17 +70,7 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Shield size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">
-            Administration
-          </h1>
-        </div>
-        <p className="mt-1 text-sm text-stone-500">
-          — vue d&apos;ensemble de la plateforme
-        </p>
-      </div>
+      <AccountPageHeader icon={Shield} title="> Administration" description="— vue d’ensemble de la plateforme" />
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">

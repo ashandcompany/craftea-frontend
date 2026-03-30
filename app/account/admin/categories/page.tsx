@@ -10,6 +10,7 @@ import {
 import {
   FolderOpen, Hourglass, Plus, Pencil, Trash2, X, Check,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function AdminCategoriesPage() {
   const { user } = useAuth();
@@ -91,19 +92,11 @@ export default function AdminCategoriesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <FolderOpen size={20} className="text-stone-400" />
-              <h1 className="text-2xl font-light tracking-tight text-stone-900">
-                Catégories
-              </h1>
-            </div>
-            <p className="mt-1 text-sm text-stone-500">
-              — {categoriesList.length} catégorie{categoriesList.length > 1 ? "s" : ""}
-            </p>
-          </div>
+      <AccountPageHeader
+        icon={FolderOpen}
+        title="> Catégories"
+        description={`— ${categoriesList.length} catégorie${categoriesList.length > 1 ? "s" : ""}`}
+        action={
           <button
             onClick={() => { setShowCreate(!showCreate); setEditId(null); }}
             className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-3 py-1.5 text-xs text-stone-50 hover:bg-stone-700 transition-colors"
@@ -111,8 +104,8 @@ export default function AdminCategoriesPage() {
             <Plus size={14} />
             ajouter
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Create form */}
       {showCreate && (

@@ -16,8 +16,9 @@ import {
 import {
   Heart, Box, Star, Store, TrendingUp,
   ArrowRight, Package, Settings, MessageSquare, ShoppingBag,
-  Hourglass, Truck, Wallet
+  Hourglass, Truck, Wallet, User
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 import { assetUrl } from "@/lib/utils";
 
 export default function AccountDashboard() {
@@ -110,14 +111,11 @@ export default function AccountDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <h1 className="text-2xl font-light tracking-tight text-stone-900">
-          Bonjour, {user.firstname}
-        </h1>
-        <p className="mt-1 text-sm text-stone-500">
-          — membre depuis le {formatDate(user.created_at)}
-        </p>
-      </div>
+      <AccountPageHeader
+        icon={User}
+        title={`> Bonjour, ${user.firstname}`}
+        description={`— membre depuis le ${formatDate(user.created_at)}`}
+      />
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">

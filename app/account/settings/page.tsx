@@ -8,7 +8,8 @@ import {
     type Address,
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Pencil, X, Plus, Loader } from "lucide-react";
+import { Pencil, X, Plus, Loader, User } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function SettingsProfilePage() {
     const { user } = useAuth();
@@ -113,10 +114,7 @@ export default function SettingsProfilePage() {
     return (
         <div>
             {/* Header */}
-            <div className="mb-8 border-b border-stone-200 pb-6">
-                <h1 className="text-2xl font-light tracking-tight text-stone-900">Mon profil</h1>
-                <p className="mt-1 text-sm text-stone-500">{"—"} informations personnelles et adresses</p>
-            </div>
+            <AccountPageHeader icon={User} title="> Mon profil" description="— informations personnelles et adresses" />
 
             {/* Profile Card */}
             <div className="mb-10 border border-stone-200">

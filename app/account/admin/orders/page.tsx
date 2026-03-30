@@ -11,6 +11,7 @@ import {
 import {
   ShoppingBag, Hourglass, Search, ChevronDown,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: OrderStatus.PENDING, label: "en attente" },
@@ -73,20 +74,18 @@ export default function AdminOrdersPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <ShoppingBag size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">
-            Commandes
-          </h1>
-        </div>
-        <p className="mt-1 text-sm text-stone-500">
-          — {ordersList.length} commande{ordersList.length > 1 ? "s" : ""}
-          {pendingCount > 0 && (
-            <span className="text-amber-600"> · {pendingCount} en attente</span>
-          )}
-        </p>
-      </div>
+      <AccountPageHeader
+        icon={ShoppingBag}
+        title="> Commandes"
+        description={
+          <>
+            — {ordersList.length} commande{ordersList.length > 1 ? "s" : ""}
+            {pendingCount > 0 && (
+              <span className="text-amber-600"> · {pendingCount} en attente</span>
+            )}
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

@@ -10,6 +10,7 @@ import {
   type WalletTransaction,
 } from "@/lib/api";
 import { BanknoteArrowDown, Loader, Wallet, Landmark, ShieldCheck, ArrowRight } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 function formatMoneyFromCents(value: number) {
   return (value / 100).toLocaleString("fr-FR", {
@@ -106,13 +107,7 @@ export default function ArtistWalletPage() {
 
   return (
     <div>
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Wallet size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">Wallet artiste</h1>
-        </div>
-        <p className="mt-1 text-sm text-stone-500">— solde, retraits et historique des flux</p>
-      </div>
+      <AccountPageHeader icon={Wallet} title="> Wallet artiste" description="— solde, retraits et historique des flux" />
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">

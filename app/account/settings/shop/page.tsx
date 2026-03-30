@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader, Plus, Store, ArrowRight, ImageIcon, Check } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 import { assetUrl } from "@/lib/utils";
 
 export default function ShopListPage() {
@@ -93,9 +94,7 @@ export default function ShopListPage() {
     if (user.role !== "artist") {
         return (
             <div>
-                <div className="mb-8 border-b border-stone-200 pb-6">
-                    <h1 className="text-2xl font-light tracking-tight text-stone-900">Mes boutiques</h1>
-                </div>
+                <AccountPageHeader icon={Store} title="> Mes boutiques" />
                 <div className="border border-dashed border-stone-300 p-12 text-center">
                     <Store size={28} className="mx-auto text-stone-300 mb-3" />
                     <p className="text-sm text-stone-600 mb-1">Section réservée aux artistes</p>
@@ -108,22 +107,21 @@ export default function ShopListPage() {
     return (
         <div>
             {/* Header */}
-            <div className="mb-8 border-b border-stone-200 pb-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-light tracking-tight text-stone-900">Mes boutiques</h1>
-                        <p className="mt-1 text-sm text-stone-500">{"—"} gérez vos espaces de vente</p>
-                    </div>
-                    {!creating && shopList.length > 0 && (
+            <AccountPageHeader
+                icon={Store}
+                title="> Mes boutiques"
+                description="— gérez vos espaces de vente"
+                action={
+                    !creating && shopList.length > 0 ? (
                         <button
                             onClick={() => setCreating(true)}
                             className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700"
                         >
                             <Plus size={14} /> nouvelle boutique
                         </button>
-                    )}
-                </div>
-            </div>
+                    ) : undefined
+                }
+            />
 
             {loading ? (
                 <div className="py-16 text-center text-stone-400">

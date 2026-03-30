@@ -11,6 +11,7 @@ import {
   Users, Shield, Hourglass, Search,
   UserCheck, UserX, ChevronDown,
 } from "lucide-react";
+import { AccountPageHeader } from "@/components/account/page-header";
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
@@ -81,17 +82,11 @@ export default function AdminUsersPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 border-b border-stone-200 pb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Users size={20} className="text-stone-400" />
-          <h1 className="text-2xl font-light tracking-tight text-stone-900">
-            Utilisateurs
-          </h1>
-        </div>
-        <p className="mt-1 text-sm text-stone-500">
-          — {usersList.length} compte{usersList.length > 1 ? "s" : ""} enregistré{usersList.length > 1 ? "s" : ""}
-        </p>
-      </div>
+      <AccountPageHeader
+        icon={Users}
+        title="> Utilisateurs"
+        description={`— ${usersList.length} compte${usersList.length > 1 ? "s" : ""} enregistré${usersList.length > 1 ? "s" : ""}`}
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
