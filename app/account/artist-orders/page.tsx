@@ -32,6 +32,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 
 // Statuts que l'artiste peut définir (workflow de traitement)
 const ARTIST_STATUS_FLOW: OrderStatus[] = [
+  OrderStatus.PENDING,
   OrderStatus.CONFIRMED,
   OrderStatus.PREPARING,
   OrderStatus.SHIPPED,
@@ -48,6 +49,7 @@ export default function ArtistOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [search, setSearch] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<Record<number, OrderStatus>>({});
 
   useEffect(() => {
     if (!user || user.role !== "artist") return;
@@ -73,6 +75,11 @@ export default function ArtistOrdersPage() {
     try {
       const updated = await ordersApi.updateStatus(order.id, newStatus);
       setOrdersList((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      setSelectedStatus((prev) => {
+        const copy = { ...prev };
+        delete copy[order.id];
+        return copy;
+      });
     } catch { /* ignore */ }
     setActionLoading(null);
   };
@@ -212,8 +219,8 @@ export default function ArtistOrdersPage() {
                     <span className="text-[10px] text-stone-400">changer le statut :</span>
                     <div className="relative">
                       <select
-                        value={order.status}
-                        onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
+                        value={selectedStatus[order.id] || order.status}
+                        onChange={(e) => setSelectedStatus((prev) => ({ ...prev, [order.id]: e.target.value as OrderStatus }))}
                         disabled={actionLoading === order.id}
                         className="appearance-none border border-stone-200 px-2 py-1 pr-6 text-xs text-stone-600 bg-white disabled:opacity-50 focus:outline-none focus:border-stone-400"
                       >
@@ -225,6 +232,13 @@ export default function ArtistOrdersPage() {
                       </select>
                       <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
                     </div>
+                    <button
+                      onClick={() => handleStatusChange(order, selectedStatus[order.id] || order.status)}
+                      disabled={actionLoading === order.id || (selectedStatus[order.id] || order.status) === order.status}
+                      className="border border-stone-300 px-3 py-1 text-xs text-stone-600 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Confirmer
+                    </button>
                   </div>
                 )}
               </div>

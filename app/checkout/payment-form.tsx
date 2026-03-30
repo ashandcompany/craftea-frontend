@@ -5,6 +5,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { useState } from "react";
+import { payments as paymentsApi } from "@/lib/api";
 
 export interface PaymentError {
   title: string;
@@ -58,6 +59,10 @@ export function PaymentForm({
         setProcessing(false);
         return;
       }
+
+      // Confirm with backend so it retrieves the PaymentIntent status from Stripe
+      // and updates the local payment record to `completed`.
+      await paymentsApi.confirm({ payment_intent_id: paymentIntentId });
 
       // Payment succeeded
       onSuccess(orderId);
