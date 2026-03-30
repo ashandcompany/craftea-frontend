@@ -78,7 +78,7 @@ export default function ArtistWalletPage() {
   const canPayout =
     !submitting &&
     !!snapshot &&
-    snapshot.walletBalance >= payoutCents &&
+    (snapshot.stripeAvailable >= payoutCents || snapshot.walletBalance >= payoutCents) &&
     payoutCents >= 1000 &&
     snapshot.stripeOnboarded;
 
@@ -128,14 +128,20 @@ export default function ArtistWalletPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="border border-stone-200 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-stone-400">solde disponible</p>
-              <p className="mt-1 text-2xl text-stone-900">{formatMoneyFromCents(snapshot?.walletBalance ?? 0)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-stone-400">cagnotte disponible</p>
+              <p className="mt-1 text-2xl text-stone-900">{formatMoneyFromCents(snapshot?.stripeAvailable ?? 0)}</p>
+              <p className="mt-1 text-[10px] text-stone-400">retirable vers votre banque</p>
             </div>
             <div className="border border-stone-200 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-stone-400">solde en attente</p>
-              <p className="mt-1 text-2xl text-stone-900">{formatMoneyFromCents(snapshot?.pendingBalance ?? 0)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-stone-400">en cours de traitement</p>
+              <p className="mt-1 text-2xl text-stone-900">{formatMoneyFromCents(snapshot?.stripePending ?? 0)}</p>
+              <p className="mt-1 text-[10px] text-stone-400">disponible sous 2-7 jours</p>
+            </div>
+            <div className="border border-stone-200 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-stone-400">solde interne</p>
+              <p className="mt-1 text-2xl text-stone-900">{formatMoneyFromCents(snapshot?.walletBalance ?? 0)}</p>
             </div>
             <div className="border border-stone-200 p-4">
               <p className="text-[10px] uppercase tracking-wider text-stone-400">état stripe</p>

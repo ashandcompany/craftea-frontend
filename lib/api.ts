@@ -539,6 +539,8 @@ export interface WalletSnapshot {
   stripeOnboarded: boolean;
   walletBalance: number;
   pendingBalance: number;
+  stripeAvailable: number;
+  stripePending: number;
 }
 
 export type WalletTransactionType = 'credit' | 'debit';
@@ -582,7 +584,7 @@ export const payments = {
       `/api/payments/wallet/admin/transactions${artistId ? `?artist_id=${artistId}` : ''}`,
     ),
   requestPayout: (amountCents: number) =>
-    request<{ success: boolean; transferId: string; transactionId: string; userId: number }>(
+    request<{ success: boolean; payoutId: string; transactionId: string; userId: number }>(
       "/api/payments/wallet/payout",
       {
         method: "POST",

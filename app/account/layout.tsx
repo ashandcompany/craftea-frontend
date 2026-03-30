@@ -8,14 +8,20 @@ import {
   Box, TrendingUp, MessageSquare, Heart, Palette,
   Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck, Wallet
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
@@ -24,11 +30,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    router.push("/login");
-    return null;
   }
 
   const isActive = (href: string) => {
