@@ -182,9 +182,7 @@ export function Navbar() {
 
             {/* -- Logo --------------------------------------------------- */}
             <Link href="/" className="flex shrink-0 items-center gap-2">
-              <span className="text-xl font-light tracking-tight text-stone-900 dark:text-stone-100">
-                Craftea
-              </span>
+              <img src="/craftea-logo-nobg.svg" alt="Craftea" className="h-12" />
               {user?.role === "artist" && (
                 <span className="bg-stone-100 px-2 py-px text-[10px] uppercase tracking-wider text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                   artiste
@@ -468,7 +466,7 @@ export function Navbar() {
       >
         {/* Drawer header */}
         <div className="flex h-14 items-center justify-between border-b border-stone-100 px-5 dark:border-stone-800">
-          <span className="text-sm font-light tracking-tight text-stone-900 dark:text-stone-100">Craftea</span>
+          <img src="/craftea-logo-nobg.svg" alt="Craftea" className="h-10" />
           <button
             onClick={() => setMobileOpen(false)}
             className="p-1.5 text-stone-500 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100"

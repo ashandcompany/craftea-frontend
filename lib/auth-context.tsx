@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { auth as authApi, setToken, removeToken, type User } from "@/lib/api";
+import { auth as authApi, type User } from "@/lib/api";
 
 type AuthContextType = {
   user: User | null;
@@ -13,9 +13,16 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({
+  children,
+  initialUser,
+}: {
+  children: ReactNode;
+  initialUser?: User | null;
+}) {
+  // If initialUser was provided by server, use it directly (no loading flash).
+  const [user, setUser] = useState<User | null>(initialUser ?? null);
+  const [loading, setLoading] = useState(initialUser === undefined);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -23,37 +30,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
     } catch {
       setUser(null);
-      removeToken();
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Only fetch client-side when no server-provided initial state.
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (token) {
+    if (initialUser === undefined) {
       fetchUser();
-    } else {
-      setLoading(false);
     }
-  }, [fetchUser]);
+  }, [fetchUser, initialUser]);
+
+  // Handle forced logout (refresh token expired or 401 with no retry path).
+  useEffect(() => {
+    const handler = () => {
+      authApi.logout().catch(() => {});
+      setUser(null);
+      window.location.href = "/login";
+    };
+    window.addEventListener("auth:logout", handler);
+    return () => window.removeEventListener("auth:logout", handler);
+  }, []);
 
   const login = async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
-    setToken(res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
     setUser(res.user);
   };
 
   const register = async (data: { firstname: string; lastname: string; email: string; password: string }) => {
     const res = await authApi.register(data);
-    setToken(res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
     setUser(res.user);
   };
 
+  // Fire-and-forget the API call; clear user state immediately for instant UX.
   const logout = () => {
-    removeToken();
+    authApi.logout().catch(() => {});
     setUser(null);
   };
 

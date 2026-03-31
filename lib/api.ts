@@ -1,24 +1,36 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
+// ─── Refresh queue ─────────────────────────────────────────────────────────
+// Prevents multiple concurrent refresh calls when several requests 401 at once.
+
+let isRefreshing = false;
+let refreshQueue: Array<(success: boolean) => void> = [];
+
+function notifyQueue(success: boolean) {
+  const q = refreshQueue;
+  refreshQueue = [];
+  q.forEach((fn) => fn(success));
 }
 
-export function setToken(token: string) {
-  localStorage.setItem("accessToken", token);
+async function doRefresh(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
-export function removeToken() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-}
+// ─── Core request ───────────────────────────────────────────────────────────
 
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retry = false
 ): Promise<T> {
-  const token = getToken();
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -26,12 +38,36 @@ async function request<T>(
   if (!isFormData) {
     headers["Content-Type"] = "application/json";
   }
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    credentials: "include",
   });
+
+  if (res.status === 401 && !_retry) {
+    if (isRefreshing) {
+      // Queue this call until the ongoing refresh resolves
+      const success = await new Promise<boolean>((resolve) => {
+        refreshQueue.push(resolve);
+      });
+      if (!success) {
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("auth:logout"));
+        throw new ApiError(401, "Session expirée");
+      }
+      return request<T>(path, options, true);
+    }
+
+    isRefreshing = true;
+    const success = await doRefresh();
+    isRefreshing = false;
+    notifyQueue(success);
+
+    if (success) return request<T>(path, options, true);
+
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("auth:logout"));
+    throw new ApiError(401, "Session expirée");
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -68,8 +104,6 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
-  refreshToken: string;
 }
 
 export const auth = {
@@ -77,6 +111,8 @@ export const auth = {
     request<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<AuthResponse>("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  logout: () =>
+    request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   me: () => request<User>("/api/auth/me"),
 };
 
