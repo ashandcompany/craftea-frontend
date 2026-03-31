@@ -1,33 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
+import { auth } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function LoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/");
+      await auth.forgotPassword(email);
+      setSubmitted(true);
     } catch (err: any) {
-      setError(err.message || "Erreur de connexion");
+      setError(err.message || "Une erreur est survenue");
     } finally {
       setLoading(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 font-mono">
+        <div className="w-full max-w-md">
+          <div className="mb-10 border-b border-stone-200 pb-6 text-center">
+            <h1 className="text-3xl font-light tracking-tight text-stone-900">
+              Email envoyé
+            </h1>
+          </div>
+
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-6 text-center space-y-4">
+            <p className="text-sm text-stone-700">
+              Nous avons envoyé un lien de réinitialisation à{' '}
+              <strong>{email}</strong>
+            </p>
+            <p className="text-xs text-stone-500">
+              Le lien est valable <strong>1 heure</strong>. Vérifiez votre dossier spam si vous ne recevez pas l'email.
+            </p>
+          </div>
+
+          <div className="mt-8 space-y-4 text-center">
+            <Link
+              href="/login"
+              className="block text-xs text-stone-500 hover:text-stone-700"
+            >
+              ← retour à la connexion
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 font-mono">
@@ -35,10 +64,10 @@ export default function LoginPage() {
         {/* Header */}
         <div className="mb-10 border-b border-stone-200 pb-6 text-center">
           <h1 className="text-3xl font-light tracking-tight text-stone-900">
-            Connexion
+            Mot de passe oublié
           </h1>
           <p className="mt-2 text-sm text-stone-500">
-            — accédez à votre espace —
+            — réinitialiser votre mot de passe —
           </p>
         </div>
 
@@ -49,6 +78,12 @@ export default function LoginPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          <div>
+            <p className="text-xs text-stone-500 mb-4">
+              Entrez l'adresse email associée à votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <label className="block text-xs uppercase tracking-wider text-stone-400">
@@ -64,68 +99,26 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs uppercase tracking-wider text-stone-400">
-              mot de passe
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-all focus:border-stone-600 pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-700 transition-colors text-xs uppercase"
-              >
-                {showPassword ? "masquer" : "voir"}
-              </button>
-            </div>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
             className="w-full border border-stone-800 bg-stone-800 px-4 py-3 text-sm text-stone-50 transition-colors hover:bg-stone-700 disabled:opacity-50"
           >
-            {loading ? 'connexion...' : 'se connecter'}
+            {loading ? 'envoi en cours...' : 'envoyer le lien'}
           </button>
-
-          <div className="text-center">
-            <Link
-              href="/forgot-password"
-              className="text-xs text-stone-500 hover:text-stone-700 transition-colors"
-            >
-              mot de passe oublié ?
-            </Link>
-          </div>
         </form>
 
         {/* Footer */}
         <div className="mt-8 border-t border-stone-200 pt-6 text-center">
           <p className="text-xs text-stone-500">
-            pas encore de compte ?{' '}
-            <Link 
-              href="/register" 
+            vous vous souvenez de votre mot de passe ?{' '}
+            <Link
+              href="/login"
               className="text-stone-800 hover:underline border-b border-stone-200 hover:border-stone-800 pb-0.5"
             >
-              créer un compte
+              se connecter
             </Link>
           </p>
-        </div>
-
-        {/* Lien retour (optionnel) */}
-        <div className="mt-4 text-center">
-          <Link 
-            href="/" 
-            className="text-[10px] text-stone-400 hover:text-stone-600"
-          >
-            ← retour à l'accueil
-          </Link>
         </div>
       </div>
     </div>
