@@ -21,8 +21,10 @@ import {
   Check,
   Loader2,
   X,
+  ArrowRight,
 } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
+import Link from "next/link";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: OrderStatus.PENDING, label: "en attente" },
@@ -220,6 +222,13 @@ export default function MyOrdersPage() {
                   >
                     {STATUS_OPTIONS.find((s) => s.value === order.status)?.label || order.status}
                   </span>
+                  <Link
+                    href={`/account/orders/${order.id}`}
+                    className="flex items-center gap-1 text-[10px] font-mono text-stone-400 hover:text-sage-700 border border-sage-200 hover:border-sage-400 px-2 py-0.5 transition-colors"
+                  >
+                    voir
+                    <ArrowRight size={10} strokeWidth={1.5} />
+                  </Link>
                 </div>
               </div>
 
