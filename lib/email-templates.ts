@@ -1,5 +1,5 @@
-// Email templates for preview
-// These are copied from the backend and adapted for frontend preview
+// Real email templates from backend
+// notification-service & user-service
 
 export interface OrderConfirmationParams {
   orderNumber: string;
@@ -20,9 +20,6 @@ export function orderConfirmationTemplate(p: OrderConfirmationParams): string {
       </tr>`,
     )
     .join('');
-
-  const total = (p.total / 100).toFixed(2);
-  const commission = (p.commissionAmount / 100).toFixed(2);
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -54,23 +51,25 @@ export function orderConfirmationTemplate(p: OrderConfirmationParams): string {
               <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:24px;">
                 <thead>
                   <tr style="background:#f3f4f6;">
-                    <th style="padding:8px 12px;text-align:left;font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px;">Produit</th>
-                    <th style="padding:8px 12px;text-align:center;font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px;">Qté</th>
-                    <th style="padding:8px 12px;text-align:right;font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.3px;">Prix</th>
+                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#6b7280;text-transform:uppercase;">Article</th>
+                    <th style="padding:10px 12px;text-align:center;font-size:12px;color:#6b7280;text-transform:uppercase;">Qté</th>
+                    <th style="padding:10px 12px;text-align:right;font-size:12px;color:#6b7280;text-transform:uppercase;">Prix</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
               </table>
 
-              <!-- Total -->
-              <div style="text-align:right;margin-bottom:24px;border-top:1px solid #e5e7eb;padding-top:16px;">
-                <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">
-                  Total : <strong style="color:#374151;">${total} €</strong>
-                </p>
-                <p style="margin:0;color:#9ca3af;font-size:12px;">
-                  Commission déduite : ${commission} €
-                </p>
-              </div>
+              <!-- Totals -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                <tr>
+                  <td style="padding:4px 0;color:#6b7280;font-size:14px;">Commission plateforme</td>
+                  <td style="padding:4px 0;color:#6b7280;font-size:14px;text-align:right;">${(p.commissionAmount / 100).toFixed(2)} €</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0 0;color:#111827;font-size:16px;font-weight:700;border-top:2px solid #e5e7eb;">Total</td>
+                  <td style="padding:8px 0 0;color:#111827;font-size:16px;font-weight:700;text-align:right;border-top:2px solid #e5e7eb;">${(p.total / 100).toFixed(2)} €</td>
+                </tr>
+              </table>
 
               <a href="${p.orderUrl}"
                  style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:15px;font-weight:600;">
@@ -160,26 +159,26 @@ export function stripeKycConfirmedTemplate(p: StripeKycConfirmedParams): string 
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);">
           <!-- Header -->
           <tr>
-            <td style="background:#10b981;padding:32px 40px;">
+            <td style="background:#059669;padding:32px 40px;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Craftea</h1>
-              <p style="margin:4px 0 0;color:#d1fae5;font-size:14px;">Identité vérifiée ✓</p>
+              <p style="margin:4px 0 0;color:#d1fae5;font-size:14px;">Identité vérifiée avec succès</p>
             </td>
           </tr>
           <!-- Body -->
           <tr>
             <td style="padding:32px 40px;">
-              <div style="text-align:center;margin-bottom:24px;">
-                <div style="font-size:48px;margin-bottom:12px;">✓</div>
-                <h2 style="margin:0;color:#059669;font-size:20px;font-weight:700;">Vérification réussie</h2>
+              <!-- Success icon -->
+              <div style="width:56px;height:56px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 0 24px;text-align:center;line-height:56px;font-size:28px;">
+                ✓
               </div>
               <p style="margin:0 0 16px;color:#374151;font-size:16px;">
                 Bonjour <strong>${p.artistName}</strong>,
               </p>
-              <p style="margin:0 0 24px;color:#374151;font-size:15px;">
-                Votre identité a été vérifiée avec succès. Vous pouvez maintenant recevoir des paiements directement sur votre compte bancaire.
+              <p style="margin:0 0 16px;color:#374151;font-size:15px;">
+                Bonne nouvelle ! Votre identité a été <strong style="color:#059669;">vérifiée avec succès</strong> par Stripe.
               </p>
-              <p style="margin:0;color:#6b7280;font-size:14px;">
-                Bienvenue dans la famille des artisans Craftea ! 🎨
+              <p style="margin:0 0 0;color:#374151;font-size:15px;">
+                Vous pouvez maintenant recevoir des paiements directement sur votre compte bancaire. Les virements seront déclenchés automatiquement après chaque vente.
               </p>
             </td>
           </tr>
@@ -274,28 +273,31 @@ export function payoutFailedTemplate(p: PayoutFailedParams): string {
           <tr>
             <td style="background:#dc2626;padding:32px 40px;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Craftea</h1>
-              <p style="margin:4px 0 0;color:#fee2e2;font-size:14px;">Virement échoué</p>
+              <p style="margin:4px 0 0;color:#fecaca;font-size:14px;">Échec du virement</p>
             </td>
           </tr>
           <!-- Body -->
           <tr>
             <td style="padding:32px 40px;">
               <p style="margin:0 0 24px;color:#374151;font-size:16px;">
-                Nous avons rencontré une erreur lors du virement de vos fonds.
+                Nous n'avons pas pu effectuer votre virement.
               </p>
               <!-- Amount highlight -->
               <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:24px;text-align:center;margin-bottom:24px;">
-                <p style="margin:0 0 4px;color:#dc2626;font-size:13px;text-transform:uppercase;letter-spacing:.5px;">Montant concerné</p>
-                <p style="margin:0;color:#7f1d1d;font-size:32px;font-weight:700;">${formatted} ${currency}</p>
+                <p style="margin:0 0 4px;color:#ef4444;font-size:13px;text-transform:uppercase;letter-spacing:.5px;">Montant concerné</p>
+                <p style="margin:0;color:#b91c1c;font-size:32px;font-weight:700;">${formatted} ${currency}</p>
               </div>
-              <p style="margin:0 0 16px;color:#6b7280;font-size:14px;">
-                Vos fonds restent sécurisés dans votre portefeuille. Veuillez :
+              <p style="margin:0 0 16px;color:#374151;font-size:14px;">
+                Causes possibles :
               </p>
-              <ul style="margin:0 0 24px;padding-left:24px;color:#6b7280;font-size:14px;">
-                <li style="margin-bottom:8px;">Vérifier les détails de votre compte bancaire</li>
-                <li style="margin-bottom:8px;">Vous assurer que votre compte est toujours actif</li>
-                <li>Contacter notre support si le problème persiste</li>
+              <ul style="margin:0 0 24px;padding-left:20px;color:#6b7280;font-size:14px;line-height:1.6;">
+                <li>Coordonnées bancaires incorrectes ou expirées</li>
+                <li>Compte bancaire non éligible aux virements Stripe</li>
+                <li>Problème temporaire chez votre banque</li>
               </ul>
+              <p style="margin:0;color:#374151;font-size:14px;">
+                Connectez-vous à votre tableau de bord Craftea pour mettre à jour vos informations bancaires. Notre équipe support est disponible si vous avez besoin d'aide.
+              </p>
             </td>
           </tr>
           <!-- Footer -->
@@ -314,7 +316,6 @@ export function payoutFailedTemplate(p: PayoutFailedParams): string {
 
 export interface ResetPasswordParams {
   resetUrl: string;
-  expiresInHours: number;
 }
 
 export function resetPasswordTemplate(p: ResetPasswordParams): string {
@@ -337,17 +338,17 @@ export function resetPasswordTemplate(p: ResetPasswordParams): string {
           <tr>
             <td style="padding:32px 40px;">
               <p style="margin:0 0 16px;color:#374151;font-size:16px;">
-                Vous avez demandé une réinitialisation de votre mot de passe.
+                Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
               </p>
-              <p style="margin:0 0 32px;color:#374151;font-size:15px;">
-                Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe. Ce lien expire dans <strong>${p.expiresInHours} heures</strong>.
+              <p style="margin:0 0 32px;color:#6b7280;font-size:14px;">
+                Ce lien est valable <strong>30 minutes</strong>. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
               </p>
               <a href="${p.resetUrl}"
                  style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:15px;font-weight:600;">
                 Réinitialiser mon mot de passe
               </a>
-              <p style="margin:24px 0 0;color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;">
-                Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet email. Si vous avez des questions, contactez-nous.
+              <p style="margin:32px 0 0;color:#9ca3af;font-size:12px;word-break:break-all;">
+                Ou copiez ce lien : ${p.resetUrl}
               </p>
             </td>
           </tr>
