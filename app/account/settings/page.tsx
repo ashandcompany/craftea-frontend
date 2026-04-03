@@ -11,6 +11,8 @@ import { assetUrl } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Pencil, X, Plus, Loader, User, Camera } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
+import { usePhotonSearch } from "@/hooks/usePhotonSearch";
+import { formatPhotonLabel, photonToAddressFields } from "@/utils/photon";
 
 export default function SettingsProfilePage() {
     const { user } = useAuth();
@@ -31,6 +33,7 @@ export default function SettingsProfilePage() {
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
     const [addressForm, setAddressForm] = useState({ label: "", street: "", city: "", postal_code: "", country: "" });
     const [addressError, setAddressError] = useState("");
+    const { results: photonResults, search: photonSearch, setResults: photonSetResults } = usePhotonSearch();
 
     useEffect(() => {
         if (!user) return;
@@ -359,12 +362,42 @@ export default function SettingsProfilePage() {
 
                             <div className="space-y-1">
                                 <label className="text-xs uppercase tracking-wider text-stone-400">rue</label>
-                                <input
-                                    placeholder="123 rue de la Paix"
-                                    value={addressForm.street}
-                                    onChange={(e) => setAddressForm((f) => ({ ...f, street: e.target.value }))}
-                                    className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
-                                />
+                                <div className="relative">
+                                    <input
+                                        placeholder="123 rue de la Paix"
+                                        value={addressForm.street}
+                                        onChange={(e) => {
+                                            setAddressForm((f) => ({ ...f, street: e.target.value }));
+                                            photonSearch(e.target.value);
+                                        }}
+                                        onBlur={() => setTimeout(() => photonSetResults([]), 150)}
+                                        className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                                    />
+                                    {photonResults.length > 0 && (
+                                        <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto border border-stone-200 bg-white shadow-lg">
+                                            {photonResults.map((r, i) => (
+                                                <li
+                                                    key={i}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        const fields = photonToAddressFields(r);
+                                                        setAddressForm((f) => ({
+                                                            ...f,
+                                                            street: fields.street,
+                                                            city: fields.city,
+                                                            postal_code: fields.postal_code,
+                                                            country: fields.country,
+                                                        }));
+                                                        photonSetResults([]);
+                                                    }}
+                                                    className="cursor-pointer px-3 py-2 text-xs text-stone-700 hover:bg-stone-50"
+                                                >
+                                                    {formatPhotonLabel(r)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

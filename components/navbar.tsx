@@ -633,11 +633,6 @@ export function Navbar() {
                 </div>
               </div>
             )}
-
-            {/* Promo */}
-            <div className="border border-dashed border-stone-200 px-4 py-3 text-center text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
-              ✦ livraison offerte dès 50€ ✦
-            </div>
           </div>
         </div>
       </div>

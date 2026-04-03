@@ -1,6 +1,8 @@
 import { AlertTriangle, MapPin, Check, Loader2 } from "lucide-react";
 import { type ShippingZone } from "@/lib/api";
 import { useState } from "react";
+import { usePhotonSearch } from "@/hooks/usePhotonSearch";
+import { formatPhotonLabel, photonToAddressFields, photonCountryToCode } from "@/utils/photon";
 
 interface AddressFormProps {
   addressLine: string;
@@ -34,6 +36,7 @@ export function AddressForm({
   isVerified = false,
 }: AddressFormProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const { results: photonResults, search: photonSearch, setResults: photonSetResults } = usePhotonSearch()
 
   // Mapping des zones de livraison
   const zoneLabels = {
@@ -116,11 +119,11 @@ export function AddressForm({
             <input
               type="text"
               value={addressLine}
-              onChange={(e) => onAddressLineChange(e.target.value)}
+              onChange={(e) => { onAddressLineChange(e.target.value); photonSearch(e.target.value) }}
               onFocus={() => setFocusedField("addressLine")}
-              onBlur={() => setFocusedField(null)}
+              onBlur={() => { setFocusedField(null); setTimeout(() => photonSetResults([]), 150) }}
               placeholder="123 rue Principale"
-              autoComplete="address-line1"
+              autoComplete="off"
               className={getFieldClassName("addressLine")}
               disabled={isVerifying}
             />
@@ -130,6 +133,28 @@ export function AddressForm({
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sage-500"
                 strokeWidth={1.5}
               />
+            )}
+            {photonResults.length > 0 && !isVerifying && (
+              <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-52 overflow-y-auto border border-sage-200 bg-white shadow-lg font-mono">
+                {photonResults.map((r, i) => (
+                  <li
+                    key={i}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      const fields = photonToAddressFields(r)
+                      onAddressLineChange(fields.street)
+                      onCityChange(fields.city)
+                      onPostalCodeChange(fields.postal_code)
+                      const code = photonCountryToCode(fields.country)
+                      if (code) onCountryCodeChange(code)
+                      photonSetResults([])
+                    }}
+                    className="cursor-pointer px-3 py-2 text-xs text-stone-700 hover:bg-sage-50"
+                  >
+                    {formatPhotonLabel(r)}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
           {formErrors.addressLine && (
