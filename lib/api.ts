@@ -177,6 +177,8 @@ export interface ArtistProfile {
   logo_url?: string;
   social_links?: string;
   validated: boolean;
+  validation_status?: 'none' | 'pending' | 'approved' | 'rejected';
+  validation_note?: string | null;
   stripe_account_id?: string | null;
   stripe_onboarded?: boolean;
   wallet_balance?: number;
@@ -191,6 +193,21 @@ export interface StripeOnboardingStatus {
   detailsSubmitted: boolean;
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
+}
+
+export interface ArtistVerificationDocument {
+  id: number;
+  artist_profile_id: number;
+  file_url: string;
+  name?: string | null;
+  description?: string | null;
+  created_at: string;
+}
+
+export interface ArtistVerificationStatus {
+  validation_status: 'none' | 'pending' | 'approved' | 'rejected';
+  validation_note?: string | null;
+  documents: ArtistVerificationDocument[];
 }
 
 export interface Shop {
@@ -252,6 +269,20 @@ export const artists = {
     }),
   getStripeOnboardingStatus: () =>
     request<StripeOnboardingStatus>("/api/artists/profile/me/stripe/status"),
+  getMyVerification: () =>
+    request<ArtistVerificationStatus>("/api/artists/profile/me/verification"),
+  submitVerification: (formData: FormData) =>
+    request<ArtistVerificationStatus>("/api/artists/profile/me/verification", {
+      method: "POST",
+      body: formData,
+    }),
+  adminGetVerifications: () =>
+    request<(ArtistProfile & { documents: ArtistVerificationDocument[] })[]>("/api/artists/admin/verifications"),
+  adminReviewVerification: (artistId: number, action: 'approve' | 'reject', note?: string) =>
+    request<{ id: number; validated: boolean; validation_status: string; validation_note: string | null }>(
+      `/api/artists/admin/${artistId}/verification`,
+      { method: "PATCH", body: JSON.stringify({ action, note }) },
+    ),
 };
 
 export const shops = {

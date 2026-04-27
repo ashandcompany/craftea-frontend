@@ -61,6 +61,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account", icon: LayoutDashboard, label: "tableau de bord" },
     { href: "/account/settings", icon: User, label: "mon profil" },
     { href: "/account/settings/artist", icon: Palette, label: "profil artiste" },
+    { href: "/account/verification", icon: Shield, label: "validation artiste" },
     { href: "/account/wallet", icon: Wallet, label: "wallet artiste" },
     { href: "/account/settings/shop", icon: Store, label: "mes boutiques" },
     { href: "/account/products", icon: Box, label: "mes produits" },
