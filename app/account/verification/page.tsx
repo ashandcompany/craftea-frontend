@@ -200,7 +200,7 @@ export default function ArtistVerificationPage() {
           )}
           {currentStatus === "pending" && (
             <p className="mt-1 text-sm text-amber-700">
-              Notre équipe examine vos documents. Vous recevrez un email dÃ¨s que la décision sera prise.
+              Notre équipe examine vos documents. Vous recevrez un email dès que la décision sera prise.
             </p>
           )}
         </div>
@@ -336,7 +336,7 @@ export default function ArtistVerificationPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="Décrivez briÃ¨vement vos documents : techniques utilisées, matériaux, contexte de création..."
+              placeholder="Décrivez brièvement vos documents : techniques utilisées, matériaux, contexte de création..."
               className="w-full border border-stone-300 px-3 py-2 text-sm font-mono text-stone-800 placeholder-stone-300 focus:outline-none focus:border-stone-600 resize-none"
             />
           </div>
@@ -362,7 +362,7 @@ export default function ArtistVerificationPage() {
           <CheckCircle2 size={18} className="text-emerald-600 mt-0.5 shrink-0" strokeWidth={1.5} />
           <div>
             <p className="text-sm font-semibold text-emerald-700 font-mono">
-              Demande soumise avec succÃ¨s
+              Demande soumise avec succès
             </p>
             <p className="text-sm text-emerald-700 mt-1">
               Notre équipe va examiner vos documents et vous notifiera par email.

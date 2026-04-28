@@ -11,7 +11,7 @@ import {
 import {
   Palette, Hourglass, Search, CheckCircle2, XCircle,
   ShieldCheck, ShieldOff, ChevronDown, FileImage, Eye,
-  ThumbsUp, ThumbsDown, X,
+  ThumbsUp, ThumbsDown, X, Clock,
 } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 import { assetUrl } from "@/lib/utils";
@@ -40,6 +40,7 @@ export default function AdminArtistsPage() {
   const [rejectNote, setRejectNote] = useState<Record<number, string>>({});
   const [rejectOpen, setRejectOpen] = useState<number | null>(null);
   const [previewDoc, setPreviewDoc] = useState<string | null>(null);
+  const [verifFilter, setVerifFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
 
   useEffect(() => {
     if (!user || user.role !== "admin") return;
@@ -72,7 +73,7 @@ export default function AdminArtistsPage() {
     setActionLoading(artist.id);
     try {
       const updated = await artistsApi.toggleValidation(artist.id);
-      setArtistsList((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      setArtistsList((prev) => prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)));
     } catch { /* ignore */ }
     setActionLoading(null);
   };
@@ -116,6 +117,7 @@ export default function AdminArtistsPage() {
     });
 
   const pendingCount = artistsList.filter((a) => !a.validated).length;
+  const pendingVerificationsCount = verifications.filter((v) => v.validation_status === "pending").length;
 
   return (
     <div>
@@ -130,7 +132,7 @@ export default function AdminArtistsPage() {
               <span className="text-amber-600"> · {pendingCount} en attente</span>
             )}
             {verifications.length > 0 && (
-              <span className="text-blue-600"> · {verifications.length} demande{verifications.length > 1 ? "s" : ""} à examiner</span>
+              <span className="text-blue-600"> · {pendingVerificationsCount} demande{pendingVerificationsCount > 1 ? "s" : ""} à examiner</span>
             )}
           </>
         }
@@ -157,9 +159,9 @@ export default function AdminArtistsPage() {
           }`}
         >
           Demandes de validation
-          {verifications.length > 0 && (
+          {pendingVerificationsCount > 0 && (
             <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
-              {verifications.length}
+              {pendingVerificationsCount}
             </span>
           )}
         </button>
@@ -309,138 +311,183 @@ export default function AdminArtistsPage() {
               <div className="inline-block h-5 w-5 animate-pulse"><Hourglass /></div>
               <p className="mt-2 text-sm">chargement...</p>
             </div>
-          ) : verifications.length === 0 ? (
-            <div className="py-16 text-center text-stone-400">
-              <ShieldCheck size={28} className="mx-auto mb-3 text-stone-300" />
-              <p className="text-sm">Aucune demande en attente</p>
-            </div>
           ) : (
-            <div className="space-y-6">
-              {verifications.map((req) => {
-                const name = req.user
-                  ? `${req.user.firstname} ${req.user.lastname}`
-                  : `Artiste #${req.user_id}`;
-                const isOpen = rejectOpen === req.id;
-                return (
-                  <div key={req.id} className="border border-stone-200 p-5">
-                    {/* Artist info */}
-                    <div className="flex items-center gap-3 mb-4">
-                      {req.logo_url ? (
-                        <img
-                          src={assetUrl(req.logo_url, "artist-images")}
-                          alt={name}
-                          className="h-10 w-10 border border-stone-200 object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center border border-stone-200 bg-stone-50 shrink-0">
-                          <Palette size={16} className="text-stone-400" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-stone-800">{name}</p>
-                        <p className="text-[10px] text-stone-400 font-mono">ID #{req.id} · user #{req.user_id}</p>
-                      </div>
-                    </div>
+            <>
+              {/* Filter bar */}
+              <div className="flex gap-2 mb-5 flex-wrap">
+                {(["pending", "all", "approved", "rejected"] as const).map((f) => {
+                  const labels = { all: "Toutes", pending: "En attente", approved: "Approuvées", rejected: "Refusées" };
+                  const counts = { all: verifications.length, pending: verifications.filter(v => v.validation_status === "pending").length, approved: verifications.filter(v => v.validation_status === "approved").length, rejected: verifications.filter(v => v.validation_status === "rejected").length };
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setVerifFilter(f)}
+                      className={`px-3 py-1 text-xs font-mono border transition-colors ${verifFilter === f ? "bg-stone-900 text-white border-stone-900" : "border-stone-200 text-stone-500 hover:border-stone-400"}`}
+                    >
+                      {labels[f]} ({counts[f]})
+                    </button>
+                  );
+                })}
+              </div>
 
-                    {/* Documents */}
-                    {req.documents.length > 0 ? (
-                      <div className="mb-4">
-                        <p className="text-xs font-mono tracking-widest text-stone-400 uppercase mb-2">
-                          Documents soumis ({req.documents.length})
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {req.documents.map((doc) => (
-                            <button
-                              key={doc.id}
-                              type="button"
-                              onClick={() => setPreviewDoc(assetUrl(doc.file_url, "artist-images"))}
-                              className="group relative border border-stone-200 hover:border-stone-500 transition-colors overflow-hidden text-left"
-                            >
-                              <img
-                                src={assetUrl(doc.file_url, "artist-images")}
-                                alt="preuve"
-                                className="w-full h-28 object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                              />
-                              <div className="p-2 bg-stone-50 text-xs text-stone-500 font-mono flex items-center gap-1 truncate">
-                                <Eye size={11} className="shrink-0" strokeWidth={1.5} />
-                                <span className="truncate">{doc.name ?? doc.description ?? "document"}</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-stone-400 mb-4 italic">Aucun document soumis</p>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap gap-3 items-start">
-                      <button
-                        onClick={() => handleApprove(req.id)}
-                        disabled={reviewLoading === req.id}
-                        className="flex items-center gap-1.5 border border-green-200 text-green-700 px-3 py-1.5 text-xs hover:bg-green-50 transition-colors disabled:opacity-50"
-                      >
-                        <ThumbsUp size={12} strokeWidth={1.5} />
-                        Approuver
-                      </button>
-
-                      {!isOpen ? (
-                        <button
-                          onClick={() => setRejectOpen(req.id)}
-                          disabled={reviewLoading === req.id}
-                          className="flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 text-xs hover:bg-red-50 transition-colors disabled:opacity-50"
-                        >
-                          <ThumbsDown size={12} strokeWidth={1.5} />
-                          Refuser
-                        </button>
-                      ) : (
-                        <div className="flex-1 min-w-60 space-y-2">
-                          <textarea
-                            placeholder="Motif du refus (optionnel)..."
-                            rows={2}
-                            value={rejectNote[req.id] ?? ""}
-                            onChange={(e) =>
-                              setRejectNote((prev) => ({ ...prev, [req.id]: e.target.value }))
-                            }
-                            className="w-full border border-red-200 px-3 py-2 text-xs font-mono text-stone-800 placeholder-stone-300 focus:outline-none focus:border-red-400 resize-none"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleReject(req.id)}
-                              disabled={reviewLoading === req.id}
-                              className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 text-xs hover:bg-red-700 transition-colors disabled:opacity-50"
-                            >
-                              <ThumbsDown size={12} strokeWidth={1.5} />
-                              Confirmer le refus
-                            </button>
-                            <button
-                              onClick={() => setRejectOpen(null)}
-                              className="border border-stone-200 text-stone-500 px-3 py-1.5 text-xs hover:bg-stone-50"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+              {(() => {
+                const filtered = verifFilter === "all" ? verifications : verifications.filter(v => v.validation_status === verifFilter);
+                if (filtered.length === 0) return (
+                  <div className="py-16 text-center text-stone-400">
+                    <ShieldCheck size={28} className="mx-auto mb-3 text-stone-300" />
+                    <p className="text-sm">Aucune demande{verifFilter !== "all" ? ` ${verifFilter === "pending" ? "en attente" : verifFilter === "approved" ? "approuvée" : "refusée"}` : ""}</p>
                   </div>
                 );
-              })}
-            </div>
-          )}
+                return (
+                  <div className="space-y-6">
+                    {filtered.map((req) => {
+                      const name = req.user
+                        ? `${req.user.firstname} ${req.user.lastname}`
+                        : `Artiste #${req.user_id}`;
+                      const isOpen = rejectOpen === req.id;
+                      const isPending = req.validation_status === "pending";
+                      const globalDescription = req.documents[0]?.description;
+                      return (
+                        <div key={req.id} className="border border-stone-200 p-5">
+                          {/* Artist info + status badge */}
+                          <div className="flex items-center gap-3 mb-4">
+                            {req.logo_url ? (
+                              <img
+                                src={assetUrl(req.logo_url, "artist-images")}
+                                alt={name}
+                                className="h-10 w-10 border border-stone-200 object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center border border-stone-200 bg-stone-50 shrink-0">
+                                <Palette size={16} className="text-stone-400" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-stone-800">{name}</p>
+                              <p className="text-[10px] text-stone-400 font-mono">ID #{req.id} · user #{req.user_id}</p>
+                            </div>
+                            {req.validation_status === "pending" && (
+                              <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700">
+                                <Clock size={9} /> En attente
+                              </span>
+                            )}
+                            {req.validation_status === "approved" && (
+                              <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700">
+                                <ShieldCheck size={9} /> Approuvée
+                              </span>
+                            )}
+                            {req.validation_status === "rejected" && (
+                              <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 bg-red-50 border border-red-200 text-red-600">
+                                <ShieldOff size={9} /> Refusée
+                              </span>
+                            )}
+                          </div>
 
-          {/* Lightbox */}
-          {previewDoc && (
-            <div
-              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-              onClick={() => setPreviewDoc(null)}
-            >
-              <button className="absolute top-4 right-4 text-white" onClick={() => setPreviewDoc(null)}>
-                <X size={24} />
-              </button>
-              <img src={previewDoc} alt="preuve" className="max-h-[80vh] max-w-full object-contain" />
-            </div>
+                          {/* Global description */}
+                          {globalDescription && (
+                            <p className="text-xs text-stone-600 mb-4 leading-relaxed border-l-2 border-stone-300 pl-3 italic">
+                              {globalDescription}
+                            </p>
+                          )}
+
+                          {/* Rejection note */}
+                          {req.validation_status === "rejected" && req.validation_note && (
+                            <p className="text-xs text-red-600 mb-4 border-l-2 border-red-300 pl-3">
+                              Motif du refus : {req.validation_note}
+                            </p>
+                          )}
+
+                          {/* Documents */}
+                          {req.documents.length > 0 ? (
+                            <div className="mb-4">
+                              <p className="text-xs font-mono tracking-widest text-stone-400 uppercase mb-2">
+                                Documents soumis ({req.documents.length})
+                              </p>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {req.documents.map((doc) => (
+                                  <button
+                                    key={doc.id}
+                                    type="button"
+                                    onClick={() => setPreviewDoc(assetUrl(doc.file_url, "artist-images"))}
+                                    className="group relative border border-stone-200 hover:border-stone-500 transition-colors overflow-hidden text-left"
+                                  >
+                                    <img
+                                      src={assetUrl(doc.file_url, "artist-images")}
+                                      alt="preuve"
+                                      className="w-full h-28 object-cover"
+                                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                    />
+                                    <div className="p-2 bg-stone-50 text-xs text-stone-500 font-mono flex items-center gap-1 truncate">
+                                      <Eye size={11} className="shrink-0" strokeWidth={1.5} />
+                                      <span className="truncate">{doc.name ?? doc.description ?? "document"}</span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-stone-400 mb-4 italic">Aucun document soumis</p>
+                          )}
+
+                          {/* Actions — only for pending */}
+                          {isPending && (
+                            <div className="flex flex-wrap gap-3 items-start">
+                              <button
+                                onClick={() => handleApprove(req.id)}
+                                disabled={reviewLoading === req.id}
+                                className="flex items-center gap-1.5 border border-green-200 text-green-700 px-3 py-1.5 text-xs hover:bg-green-50 transition-colors disabled:opacity-50"
+                              >
+                                <ThumbsUp size={12} strokeWidth={1.5} />
+                                Approuver
+                              </button>
+
+                              {!isOpen ? (
+                                <button
+                                  onClick={() => setRejectOpen(req.id)}
+                                  disabled={reviewLoading === req.id}
+                                  className="flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 text-xs hover:bg-red-50 transition-colors disabled:opacity-50"
+                                >
+                                  <ThumbsDown size={12} strokeWidth={1.5} />
+                                  Refuser
+                                </button>
+                              ) : (
+                                <div className="flex-1 min-w-60 space-y-2">
+                                  <textarea
+                                    placeholder="Motif du refus (optionnel)..."
+                                    rows={2}
+                                    value={rejectNote[req.id] ?? ""}
+                                    onChange={(e) =>
+                                      setRejectNote((prev) => ({ ...prev, [req.id]: e.target.value }))
+                                    }
+                                    className="w-full border border-red-200 px-3 py-2 text-xs font-mono text-stone-800 placeholder-stone-300 focus:outline-none focus:border-red-400 resize-none"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleReject(req.id)}
+                                      disabled={reviewLoading === req.id}
+                                      className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 text-xs hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    >
+                                      <ThumbsDown size={12} strokeWidth={1.5} />
+                                      Confirmer le refus
+                                    </button>
+                                    <button
+                                      onClick={() => setRejectOpen(null)}
+                                      className="border border-stone-200 text-stone-500 px-3 py-1.5 text-xs hover:bg-stone-50"
+                                    >
+                                      Annuler
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </>
           )}
         </>
       )}
