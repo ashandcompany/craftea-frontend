@@ -35,6 +35,7 @@ type ProductFormData = {
   delivery_time_max: string;
   delivery_time_unit: 'days' | 'weeks';
   tags: number[];
+  variants: Array<{ name: string; options: Array<{ label: string; stock: string; price: string }> }>;
 };
 
 const emptyForm: ProductFormData = {
@@ -51,7 +52,9 @@ const emptyForm: ProductFormData = {
   delivery_time_max: "",
   delivery_time_unit: 'days',
   tags: [],
+  variants: [],
 };
+
 
 export default function AccountProductsPage() {
   const { user } = useAuth();
@@ -163,6 +166,10 @@ export default function AccountProductsPage() {
         delivery_time_max: product.delivery_time_max != null ? String(product.delivery_time_max) : "",
         delivery_time_unit: product.delivery_time_unit || 'days',
         tags: product.tags?.map((t) => t.id) || [],
+        variants: (product.variants || []).map((v) => ({
+          name: v.name,
+          options: v.options.map((o) => ({ label: o.label, stock: String(o.stock), price: o.price != null ? String(o.price) : '' })),
+        })),
       });
     } else {
       setEditingProduct(null);
@@ -210,13 +217,25 @@ export default function AccountProductsPage() {
 
     setFormSaving(true);
     try {
+      // Build variants payload
+      const variantsPayload = form.variants
+        .filter((v) => v.name.trim() && v.options.some((o) => o.label.trim()))
+        .map((v) => ({
+          name: v.name.trim(),
+          options: v.options
+            .filter((o) => o.label.trim())
+            .map((o) => ({ label: o.label.trim(), stock: parseInt(o.stock, 10) || 0, price: o.price.trim() ? parseFloat(o.price) : null })),
+        }));
+
+      const hasVariants = variantsPayload.length > 0;
+
       const payload: any = {
         shop_id: form.shop_id,
         category_id: form.category_id,
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         price: form.price ? parseFloat(form.price) : undefined,
-        stock: form.stock ? parseInt(form.stock, 10) : 0,
+        stock: hasVariants ? undefined : (form.stock ? parseInt(form.stock, 10) : 0),
         processing_time_min: form.processing_time_min ? parseInt(form.processing_time_min, 10) : undefined,
         processing_time_max: form.processing_time_max ? parseInt(form.processing_time_max, 10) : undefined,
         processing_time_unit: (form.processing_time_min || form.processing_time_max) ? form.processing_time_unit : undefined,
@@ -224,6 +243,7 @@ export default function AccountProductsPage() {
         delivery_time_max: form.delivery_time_max ? parseInt(form.delivery_time_max, 10) : undefined,
         delivery_time_unit: (form.delivery_time_min || form.delivery_time_max) ? form.delivery_time_unit : undefined,
         tags: form.tags.length > 0 ? form.tags : undefined,
+        variants: hasVariants ? variantsPayload : null,
       };
 
       // Add selected images
@@ -814,17 +834,19 @@ export default function AccountProductsPage() {
                     className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs uppercase tracking-wider text-stone-400">stock</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.stock}
-                    onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                    placeholder="0"
-                    className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
-                  />
-                </div>
+                {form.variants.length === 0 && (
+                  <div className="space-y-1">
+                    <label className="text-xs uppercase tracking-wider text-stone-400">stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.stock}
+                      onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                      placeholder="0"
+                      className="w-full border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Processing time (fabrication) */}
@@ -937,6 +959,167 @@ export default function AccountProductsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Variants */}
+              <div className="space-y-3 border-t border-stone-100 pt-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs uppercase tracking-wider text-stone-400">
+                    options / variantes
+                  </label>
+                  {form.variants.length < 2 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          variants: [
+                            ...f.variants,
+                            { name: '', options: [{ label: '', stock: '0', price: '' }] },
+                          ],
+                        }))
+                      }
+                      className="text-[10px] text-stone-400 hover:text-stone-700 border-b border-stone-200 hover:border-stone-600 pb-px"
+                    >
+                      + ajouter un sélecteur
+                    </button>
+                  )}
+                </div>
+
+                {form.variants.map((variant, vi) => (
+                  <div key={vi} className="border border-stone-200 p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={variant.name}
+                        onChange={(e) => {
+                          const v = [...form.variants];
+                          v[vi] = { ...v[vi], name: e.target.value };
+                          setForm((f) => ({ ...f, variants: v }));
+                        }}
+                        placeholder="Nom du sélecteur (ex: Taille, Couleur...)"
+                        maxLength={50}
+                        className="flex-1 border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-800 outline-none focus:border-stone-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            variants: f.variants.filter((_, i) => i !== vi),
+                          }))
+                        }
+                        className="text-stone-300 hover:text-stone-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-stone-300 px-px">
+                        <span className="flex-1">option</span>
+                        <span className="w-20 text-center">stock</span>
+                        <span className="w-24 text-center">prix (€)</span>
+                        <span className="w-4" />
+                      </div>
+                      {variant.options.map((option, oi) => (
+                        <div key={oi} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={option.label}
+                            onChange={(e) => {
+                              const v = [...form.variants];
+                              v[vi] = {
+                                ...v[vi],
+                                options: v[vi].options.map((o, i) =>
+                                  i === oi ? { ...o, label: e.target.value } : o
+                                ),
+                              };
+                              setForm((f) => ({ ...f, variants: v }));
+                            }}
+                            placeholder="Option (ex: S, M, L...)"
+                            maxLength={50}
+                            className="flex-1 border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800 outline-none focus:border-stone-600"
+                          />
+                          <input
+                            type="number"
+                            value={option.stock}
+                            min="0"
+                            onChange={(e) => {
+                              const v = [...form.variants];
+                              v[vi] = {
+                                ...v[vi],
+                                options: v[vi].options.map((o, i) =>
+                                  i === oi ? { ...o, stock: e.target.value } : o
+                                ),
+                              };
+                              setForm((f) => ({ ...f, variants: v }));
+                            }}
+                            placeholder="Stock"
+                            className="w-20 border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800 outline-none focus:border-stone-600"
+                          />
+                          <input
+                            type="number"
+                            value={option.price}
+                            min="0"
+                            step="0.01"
+                            onChange={(e) => {
+                              const v = [...form.variants];
+                              v[vi] = {
+                                ...v[vi],
+                                options: v[vi].options.map((o, i) =>
+                                  i === oi ? { ...o, price: e.target.value } : o
+                                ),
+                              };
+                              setForm((f) => ({ ...f, variants: v }));
+                            }}
+                            placeholder="Prix €"
+                            className="w-24 border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800 outline-none focus:border-stone-600"
+                          />
+                          {variant.options.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const v = [...form.variants];
+                                v[vi] = {
+                                  ...v[vi],
+                                  options: v[vi].options.filter((_, i) => i !== oi),
+                                };
+                                setForm((f) => ({ ...f, variants: v }));
+                              }}
+                              className="text-stone-300 hover:text-stone-600"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+
+                      {variant.options.length < 10 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const v = [...form.variants];
+                            v[vi] = {
+                              ...v[vi],
+                              options: [...v[vi].options, { label: '', stock: '0', price: '' }],
+                            };
+                            setForm((f) => ({ ...f, variants: v }));
+                          }}
+                          className="text-[10px] text-stone-400 hover:text-stone-600"
+                        >
+                          + option
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {form.variants.length > 0 && (
+                  <p className="text-[10px] text-stone-400 italic">
+                    Le stock total sera calculé automatiquement depuis les stocks des options.
+                  </p>
+                )}
+              </div>
 
               {/* Existing images */}
               {editingProduct && orderedExistingImages.length > 0 && (

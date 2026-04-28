@@ -323,6 +323,17 @@ export const shops = {
 
 // ─── Catalog ────────────────────────────────────────────────────────────
 
+export interface ProductVariantOption {
+  label: string;
+  stock: number;
+  price?: number | null;
+}
+
+export interface ProductVariant {
+  name: string;
+  options: ProductVariantOption[];
+}
+
 export interface Product {
   id: number;
   shop_id: number;
@@ -340,6 +351,7 @@ export interface Product {
   delivery_time_max?: number;
   delivery_time_unit?: 'days' | 'weeks';
   shipping_fee?: number | null;
+  variants?: ProductVariant[] | null;
   images?: ProductImage[];
   tags?: Tag[];
   category?: Category;
@@ -384,7 +396,7 @@ export const products = {
     return request<PaginatedProducts>(`/api/products/${query ? `?${query}` : ""}`);
   },
   get: (id: number) => request<Product>(`/api/products/${id}`),
-  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time_min?: number; delivery_time_max?: number; delivery_time_unit?: string; images?: File[]; tags?: number[] }) => {
+  create: (data: { shop_id: number; category_id?: number; title: string; description?: string; price?: number; stock?: number; processing_time_min?: number; processing_time_max?: number; processing_time_unit?: string; delivery_time_min?: number; delivery_time_max?: number; delivery_time_unit?: string; images?: File[]; tags?: number[]; variants?: ProductVariant[] | null }) => {
     const formData = new FormData();
     formData.append('shop_id', String(data.shop_id));
     if (data.category_id) formData.append('category_id', String(data.category_id));
@@ -403,6 +415,9 @@ export const products = {
     }
     if (data.tags && data.tags.length > 0) {
       formData.append('tags', JSON.stringify(data.tags));
+    }
+    if (data.variants != null) {
+      formData.append('variants', JSON.stringify(data.variants));
     }
     return request<Product>("/api/products/", { method: "POST", body: formData });
   },
@@ -562,6 +577,7 @@ export interface CartItem {
   cart_id: number;
   product_id: number;
   quantity: number;
+  selected_options?: string | null;
 }
 
 export interface Cart {
@@ -575,8 +591,8 @@ export interface Cart {
 export const cart = {
   get: () =>
     request<Cart>("/api/cart"),
-  addItem: (product_id: number, quantity: number = 1) =>
-    request<Cart>("/api/cart/items", { method: "POST", body: JSON.stringify({ product_id, quantity }) }),
+  addItem: (product_id: number, quantity: number = 1, selected_options?: string) =>
+    request<Cart>("/api/cart/items", { method: "POST", body: JSON.stringify({ product_id, quantity, ...(selected_options != null ? { selected_options } : {}) }) }),
   updateItem: (itemId: number, quantity: number) =>
     request<Cart>(`/api/cart/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantity }) }),
   removeItem: (itemId: number) =>

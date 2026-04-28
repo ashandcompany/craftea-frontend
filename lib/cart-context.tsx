@@ -16,7 +16,7 @@ type CartContextType = {
   items: CartItem[];
   count: number;
   loading: boolean;
-  addItem: (productId: number, quantity?: number) => Promise<void>;
+  addItem: (productId: number, quantity?: number, selectedOptions?: string) => Promise<void>;
   updateItem: (itemId: number, quantity: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
   clear: () => Promise<void>;
@@ -51,8 +51,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const addItem = async (productId: number, quantity = 1) => {
-    const updated = await cartApi.addItem(productId, quantity);
+  const addItem = async (productId: number, quantity = 1, selectedOptions?: string) => {
+    const updated = await cartApi.addItem(productId, quantity, selectedOptions);
     setCart(updated);
   };
 

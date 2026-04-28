@@ -27,10 +27,47 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartSuccess, setCartSuccess] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
-  // Quantité déjà dans le panier pour ce produit
-  const inCart = cartItems.find((i) => i.product_id === Number(id))?.quantity ?? 0;
-  const maxQty = product ? Math.max(0, product.stock - inCart) : 0;
+  const hasVariants = !!(product?.variants && product.variants.length > 0);
+  const allVariantsSelected = hasVariants
+    ? product!.variants!.every((v) => selectedOptions[v.name])
+    : true;
+
+  // Effective stock: if variants selected, min of selected options; else global stock
+  const effectiveStock = (() => {
+    if (!product) return 0;
+    if (!hasVariants) return product.stock;
+    if (!allVariantsSelected) return 0;
+    return Math.min(
+      ...product.variants!.map((v) => {
+        const opt = v.options.find((o) => o.label === selectedOptions[v.name]);
+        return opt?.stock ?? 0;
+      }),
+    );
+  })();
+
+  // Effective price: use the first variant option that has an explicit price, fallback to product.price
+  const effectivePrice = (() => {
+    if (!hasVariants || !allVariantsSelected || !product) return product?.price ?? null;
+    for (const v of product.variants!) {
+      const opt = v.options.find((o) => o.label === selectedOptions[v.name]);
+      if (opt?.price != null) return opt.price;
+    }
+    return product.price ?? null;
+  })();
+
+  // Quantity already in cart for this product + selected options combo
+  const selectedOptionsStr =
+    hasVariants && allVariantsSelected ? JSON.stringify(selectedOptions) : undefined;
+  const inCart = cartItems
+    .filter(
+      (i) =>
+        i.product_id === Number(id) &&
+        (selectedOptionsStr ? i.selected_options === selectedOptionsStr : !i.selected_options),
+    )
+    .reduce((s, i) => s + i.quantity, 0);
+  const maxQty = Math.max(0, effectiveStock - inCart);
 
   // Review form
   const [rating, setRating] = useState(5);
@@ -76,10 +113,11 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!user || !product) return;
+    if (hasVariants && !allVariantsSelected) return;
     setAddingToCart(true);
     setCartSuccess(false);
     try {
-      await addItem(product.id, qty);
+      await addItem(product.id, qty, hasVariants ? JSON.stringify(selectedOptions) : undefined);
       setCartSuccess(true);
       setQty(1);
       setTimeout(() => setCartSuccess(false), 2000);
@@ -249,7 +287,7 @@ export default function ProductDetailPage() {
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-wider text-stone-400">prix</p>
             <p className="text-3xl text-stone-900">
-              {product.price != null ? `${Number(product.price).toFixed(2)} €` : "—"}
+              {effectivePrice != null ? `${Number(effectivePrice).toFixed(2)} €` : "—"}
             </p>
           </div>
 
@@ -277,6 +315,41 @@ export default function ProductDetailPage() {
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-stone-400">description</p>
               <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+            </div>
+          )}
+
+          {/* Variant selectors */}
+          {hasVariants && (
+            <div className="space-y-4 border-t border-stone-200 pt-4">
+              {product.variants!.map((variant) => (
+                <div key={variant.name} className="space-y-2">
+                  <p className="text-xs uppercase tracking-wider text-stone-400">{variant.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {variant.options.map((option) => (
+                      <button
+                        key={option.label}
+                        type="button"
+                        onClick={() =>
+                          setSelectedOptions((prev) => ({ ...prev, [variant.name]: option.label }))
+                        }
+                        disabled={option.stock === 0}
+                        className={`border px-3 py-1.5 text-xs transition-colors ${
+                          selectedOptions[variant.name] === option.label
+                            ? "border-stone-800 bg-stone-800 text-stone-50"
+                            : option.stock === 0
+                            ? "cursor-not-allowed border-stone-100 text-stone-300 line-through"
+                            : "border-stone-200 text-stone-600 hover:border-stone-600"
+                        }`}
+                      >
+                        {option.label}
+                        {option.stock > 0 && option.stock <= 3 && (
+                          <span className="ml-1 opacity-60">({option.stock})</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -357,15 +430,18 @@ export default function ProductDetailPage() {
           )}
 
           {/* Add to cart */}
-          {user && product.is_active && product.stock > 0 && (
+          {user && product.is_active && (effectiveStock > 0 || (hasVariants && !allVariantsSelected)) && (
             <div className="space-y-3 border-t border-stone-200 pt-4">
               <p className="text-xs uppercase tracking-wider text-stone-400">ajouter au panier</p>
-              {inCart > 0 && (
+              {hasVariants && !allVariantsSelected && (
+                <p className="text-xs italic text-stone-400">— sélectionnez toutes les options</p>
+              )}
+              {inCart > 0 && allVariantsSelected && (
                 <p className="text-xs text-stone-500">
                   déjà {inCart} dans le panier · {maxQty > 0 ? `${maxQty} restant${maxQty > 1 ? 's' : ''}` : 'stock atteint'}
                 </p>
               )}
-              {maxQty > 0 ? (
+              {maxQty > 0 && allVariantsSelected ? (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center border border-stone-200">
                     <button
