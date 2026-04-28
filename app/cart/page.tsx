@@ -32,6 +32,44 @@ import {
   MapPin,
 } from "lucide-react";
 
+// ── Helpers variants ─────────────────────────────────────────────────
+export function getItemPrice(product: Product | undefined, selectedOptions: string | null | undefined): number {
+  if (!product) return 0;
+  if (!selectedOptions || !product.variants?.length) return Number(product.price ?? 0);
+  try {
+    const opts = JSON.parse(selectedOptions) as Record<string, string>;
+    for (const variant of product.variants) {
+      const opt = variant.options.find((o) => o.label === opts[variant.name]);
+      if (opt?.price != null) return Number(opt.price);
+    }
+  } catch {}
+  return Number(product.price ?? 0);
+}
+
+export function getItemOptionStock(product: Product | undefined, selectedOptions: string | null | undefined): number {
+  if (!product) return 0;
+  if (!selectedOptions || !product.variants?.length) return product.stock;
+  try {
+    const opts = JSON.parse(selectedOptions) as Record<string, string>;
+    const stocks = product.variants.map((v) => {
+      const opt = v.options.find((o) => o.label === opts[v.name]);
+      return opt?.stock ?? 0;
+    });
+    return stocks.length > 0 ? Math.min(...stocks) : product.stock;
+  } catch {}
+  return product.stock;
+}
+
+function formatSelectedOptions(selectedOptions: string | null | undefined): string | null {
+  if (!selectedOptions) return null;
+  try {
+    const opts = JSON.parse(selectedOptions) as Record<string, string>;
+    return Object.entries(opts).map(([k, v]) => `${k} : ${v}`).join(' · ');
+  } catch {
+    return null;
+  }
+}
+
 // ── Mapping pays → zone ──────────────────────────────────────────────────
 const COUNTRY_ZONE_MAP: Record<string, ShippingZone> = {
   FR: "france",
@@ -50,7 +88,7 @@ export function countryToZone(countryCode: string): ShippingZone {
 
 // ── Calcul shipping côté client (preview) ────────────────────────────
 export function computeShopShipping(
-  shopItems: { product: Product; quantity: number }[],
+  shopItems: { product: Product; quantity: number; unitPrice?: number }[],
   profiles: ShopShippingProfile[],
   zone: ShippingZone,
 ): number | null {
@@ -67,7 +105,7 @@ export function computeShopShipping(
       : null;
 
   const shopSubtotal = shopItems.reduce(
-    (sum, i) => sum + Number(i.product.price ?? 0) * i.quantity,
+    (sum, i) => sum + (i.unitPrice ?? Number(i.product.price ?? 0)) * i.quantity,
     0,
   );
 
@@ -109,7 +147,7 @@ function ShopGroup({
 }: {
   shopId: number;
   shopInfo: Shop | null;
-  items: { id: number; product_id: number; quantity: number }[];
+  items: { id: number; product_id: number; quantity: number; selected_options?: string | null }[];
   productMap: Record<number, Product>;
   shippingProfiles: ShopShippingProfile[];
   zone: ShippingZone;
@@ -125,12 +163,12 @@ function ShopGroup({
     .filter((i) => i.product);
 
   const shopSubtotal = shopItems.reduce(
-    (sum, i) => sum + Number(i.product.price ?? 0) * i.quantity,
+    (sum, i) => sum + getItemPrice(i.product, i.selected_options) * i.quantity,
     0,
   );
 
   const shopShipping = computeShopShipping(
-    shopItems.map((i) => ({ product: i.product, quantity: i.quantity })),
+    shopItems.map((i) => ({ product: i.product, quantity: i.quantity, unitPrice: getItemPrice(i.product, i.selected_options) })),
     shippingProfiles,
     zone,
   );
@@ -222,11 +260,21 @@ function ShopGroup({
                     </button>
                   </div>
 
-                  {product?.price != null && (
-                    <p className="mt-1 text-sm text-sage-600">
-                      {Number(product.price).toFixed(2)} € / unité
+                  {/* Selected variant options */}
+                  {formatSelectedOptions(item.selected_options) && (
+                    <p className="mt-1 text-xs text-sage-500 italic">
+                      {formatSelectedOptions(item.selected_options)}
                     </p>
                   )}
+
+                  {product && (() => {
+                    const unitPrice = getItemPrice(product, item.selected_options);
+                    return unitPrice > 0 ? (
+                      <p className="mt-1 text-sm text-sage-600">
+                        {unitPrice.toFixed(2)} € / unité
+                      </p>
+                    ) : null;
+                  })()}
 
                   {product?.shipping_fee != null && (
                     <p className="mt-1 text-xs text-sage-500">
@@ -235,11 +283,14 @@ function ShopGroup({
                     </p>
                   )}
 
-                  {product?.stock != null && product.stock < 5 && (
-                    <p className="mt-1 text-xs text-amber-600">
-                      ⚡ Plus que {product.stock} en stock
-                    </p>
-                  )}
+                  {product && (() => {
+                    const optStock = getItemOptionStock(product, item.selected_options);
+                    return optStock < 5 ? (
+                      <p className="mt-1 text-xs text-amber-600">
+                        ⚡ Plus que {optStock} en stock
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="mt-4 flex items-center justify-between">
@@ -256,18 +307,21 @@ function ShopGroup({
                     </span>
                     <button
                       onClick={() => onUpdateQty(item.id, item.quantity + 1)}
-                      disabled={isLoading || !!(product && item.quantity >= product.stock)}
+                      disabled={isLoading || !!(product && item.quantity >= getItemOptionStock(product, item.selected_options))}
                       className="flex h-8 w-8 items-center justify-center text-sage-600 hover:bg-sage-50 hover:text-sage-800 disabled:opacity-30 transition-colors"
                     >
                       <Plus size={14} />
                     </button>
                   </div>
 
-                  {product?.price != null && (
-                    <span className="text-lg font-medium text-sage-800">
-                      {(Number(product.price) * item.quantity).toFixed(2)} €
-                    </span>
-                  )}
+                  {product && (() => {
+                    const unitPrice = getItemPrice(product, item.selected_options);
+                    return (
+                      <span className="text-lg font-medium text-sage-800">
+                        {(unitPrice * item.quantity).toFixed(2)} €
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -468,8 +522,7 @@ export default function CartPage() {
   // Calculs totaux
   const subtotal = items.reduce((sum, item) => {
     const product = productMap[item.product_id];
-    if (!product?.price) return sum;
-    return sum + Number(product.price) * item.quantity;
+    return sum + getItemPrice(product, item.selected_options) * item.quantity;
   }, 0);
 
   const { totalShipping, hasUnavailableShipping, unavailableShopIds } = useMemo(() => {
@@ -481,10 +534,11 @@ export default function CartPage() {
         .map((i) => ({
           product: productMap[i.product_id],
           quantity: i.quantity,
+          unitPrice: getItemPrice(productMap[i.product_id], i.selected_options),
         }))
         .filter((i) => i.product);
       const cost = computeShopShipping(
-        enriched as { product: Product; quantity: number }[],
+        enriched as { product: Product; quantity: number; unitPrice: number }[],
         shippingProfiles[shopId] || [],
         zone,
       );
@@ -701,10 +755,12 @@ export default function CartPage() {
                       .map((i) => ({
                         product: productMap[i.product_id],
                         quantity: i.quantity,
+                        unitPrice: getItemPrice(productMap[i.product_id], i.selected_options),
                       }))
                       .filter((i) => i.product) as {
                       product: Product;
                       quantity: number;
+                      unitPrice: number;
                     }[];
                     const shopShipping = computeShopShipping(
                       enriched,
@@ -820,14 +876,15 @@ export default function CartPage() {
                         .map((i) => ({
                           product: productMap[i.product_id],
                           quantity: i.quantity,
-                        }))
-                        .filter((i) => i.product) as {
-                        product: Product;
-                        quantity: number;
-                      }[];
-                      const shopSub = enriched.reduce(
-                        (s, i) =>
-                          s + Number(i.product.price ?? 0) * i.quantity,
+                            unitPrice: getItemPrice(productMap[i.product_id], i.selected_options),
+                          }))
+                          .filter((i) => i.product) as {
+                          product: Product;
+                          quantity: number;
+                          unitPrice: number;
+                        }[];
+                        const shopSub = enriched.reduce(
+                          (s, i) => s + (i.unitPrice) * i.quantity,
                         0,
                       );
                       const shopShip = computeShopShipping(

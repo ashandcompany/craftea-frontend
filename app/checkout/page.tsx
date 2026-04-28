@@ -20,7 +20,7 @@ import {
     type ShippingZone,
     type Address,
 } from "@/lib/api";
-import { countryToZone, computeShopShipping } from "@/app/cart/page";
+import { countryToZone, computeShopShipping, getItemPrice } from "@/app/cart/page";
 import {
     ArrowLeft,
     Loader2,
@@ -267,7 +267,7 @@ function CheckoutContent() {
     // Compute totals
     const subtotal = checkoutItems.reduce((sum, item) => {
         const p = productMap[item.product_id];
-        return sum + (p ? Number(p.price) * item.quantity : 0);
+        return sum + getItemPrice(p, item.selected_options) * item.quantity;
     }, 0);
 
     const totalShipping = useMemo(() => {
@@ -277,8 +277,9 @@ function CheckoutContent() {
                 .map((i) => ({
                     product: productMap[i.product_id],
                     quantity: i.quantity,
+                    unitPrice: getItemPrice(productMap[i.product_id], i.selected_options),
                 }))
-                .filter((i) => i.product) as { product: Product; quantity: number }[];
+                .filter((i) => i.product) as { product: Product; quantity: number; unitPrice: number }[];
             const cost = computeShopShipping(
                 enriched,
                 shippingProfiles[shopId] || [],
@@ -324,7 +325,7 @@ function CheckoutContent() {
             const orderItems = checkoutItems.map((item) => ({
                 product_id: item.product_id,
                 quantity: item.quantity,
-                price: Number(productMap[item.product_id]?.price ?? 0),
+                price: getItemPrice(productMap[item.product_id], item.selected_options),
             }));
             const shopIds = filterShopId ? [filterShopId] : undefined;
             const order = await orders.create(orderItems, zone, shopIds);

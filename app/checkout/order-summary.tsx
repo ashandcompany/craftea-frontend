@@ -3,11 +3,13 @@ import { type Product, type Shop, type ShopShippingProfile, type ShopShippingMet
 import { type ShippingZone } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import { useState } from "react";
+import { getItemPrice } from "@/app/cart/page";
 
 export interface CartItem {
   id: number;
   product_id: number;
   quantity: number;
+  selected_options?: string | null;
 }
 
 interface OrderSummaryProps {
@@ -181,7 +183,7 @@ export function OrderSummary({
                             {(() => {
                               const shopTotal = shopItems.reduce((acc, item) => {
                                 const product = productMap[item.product_id];
-                                return acc + (Number(product?.price || 0) * item.quantity);
+                                return acc + (getItemPrice(product, item.selected_options) * item.quantity);
                               }, 0);
                               return `${shopTotal.toFixed(2)} €`;
                             })()}
@@ -224,6 +226,13 @@ export function OrderSummary({
                               <p className="text-xs text-stone-700 truncate font-mono">
                                 {product?.title || `Produit #${item.product_id}`}
                               </p>
+                              {item.selected_options && (() => {
+                                try {
+                                  const opts = JSON.parse(item.selected_options) as Record<string, string>;
+                                  const label = Object.entries(opts).map(([k, v]) => `${k} : ${v}`).join(' · ');
+                                  return <p className="text-[9px] text-sage-500 italic mt-0.5">{label}</p>;
+                                } catch { return null; }
+                              })()}
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] text-sage-500 border border-sage-100 px-1.5 py-0.5">
                                   x{item.quantity}
@@ -232,16 +241,19 @@ export function OrderSummary({
                             </div>
                             
                             {/* Prix */}
-                            {product?.price != null && (
-                              <div className="text-right shrink-0">
-                                <span className="text-xs font-medium text-stone-700 block">
-                                  {(Number(product.price) * item.quantity).toFixed(2)} €
-                                </span>
-                                <span className="text-[9px] text-stone-400">
-                                  {Number(product.price).toFixed(2)} €/u
-                                </span>
-                              </div>
-                            )}
+                            {product && (() => {
+                              const unitPrice = getItemPrice(product, item.selected_options);
+                              return (
+                                <div className="text-right shrink-0">
+                                  <span className="text-xs font-medium text-stone-700 block">
+                                    {(unitPrice * item.quantity).toFixed(2)} €
+                                  </span>
+                                  <span className="text-[9px] text-stone-400">
+                                    {unitPrice.toFixed(2)} €/u
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}
