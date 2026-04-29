@@ -7,7 +7,7 @@ import { assetUrl } from "@/lib/utils";
 import {
   LayoutDashboard, User, MapPin, Store, Settings, LogOut,
   Box, TrendingUp, MessageSquare, Heart, Palette,
-  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck, Wallet
+  Hourglass, Shield, Users, ShoppingBag, FolderOpen, Tag, Truck, Wallet, Lock
 } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 
@@ -53,6 +53,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const buyerNav = [
     { href: "/account", icon: LayoutDashboard, label: "tableau de bord" },
     { href: "/account/settings", icon: User, label: "mon profil" },
+    { href: "/account/settings/privacy", icon: Lock, label: "confidentialité" },
     { href: "/account/orders", icon: ShoppingBag, label: "mes commandes" },
     { href: "/favorites", icon: Heart, label: "mes favoris" },
   ];
@@ -60,6 +61,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const artistNav = [
     { href: "/account", icon: LayoutDashboard, label: "tableau de bord" },
     { href: "/account/settings", icon: User, label: "mon profil" },
+    { href: "/account/settings/privacy", icon: Lock, label: "confidentialité" },
     { href: "/account/settings/artist", icon: Palette, label: "profil artiste" },
     { href: "/account/verification", icon: Shield, label: "validation artiste" },
     { href: "/account/wallet", icon: Wallet, label: "wallet artiste" },

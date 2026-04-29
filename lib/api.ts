@@ -118,6 +118,8 @@ export const auth = {
     request<{ ok: boolean }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
   resetPassword: (token: string, newPassword: string) =>
     request<{ ok: boolean }>("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword }) }),
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) =>
+    request<{ ok: boolean }>("/api/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword, confirmPassword }) }),
 };
 
 // ─── Users ──────────────────────────────────────────────────────────────
@@ -136,6 +138,8 @@ export const users = {
     request<User>(`/api/users/${id}/toggle-active`, { method: "PATCH" }),
   changeRole: (id: number, role: User["role"]) =>
     request<User>(`/api/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  deactivateSelf: () =>
+    request<{ ok: boolean }>("/api/users/deactivate-self", { method: "PATCH" }),
 };
 
 // ─── Addresses ──────────────────────────────────────────────────────────
