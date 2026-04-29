@@ -327,6 +327,7 @@ export interface ProductVariantOption {
   label: string;
   stock: number;
   price?: number | null;
+  imageIndex?: number;
 }
 
 export interface ProductVariant {
@@ -480,6 +481,13 @@ export interface Favorite {
   created_at: string;
 }
 
+export interface ReviewImage {
+  id: number;
+  review_id: number;
+  image_url: string;
+  created_at: string;
+}
+
 export interface Review {
   id: number;
   user_id: number;
@@ -487,6 +495,7 @@ export interface Review {
   rating: number;
   comment?: string;
   reviewer_name?: string | null;
+  images?: ReviewImage[];
   created_at: string;
 }
 
@@ -499,6 +508,8 @@ export const favorites = {
   },
   check: (productId: number) =>
     request<{ isFavorite: boolean }>(`/api/favorites/check/${productId}`),
+  count: (productId: number) =>
+    request<{ product_id: number; count: number }>(`/api/favorites/count/${productId}`),
   add: (product_id: number) =>
     request<Favorite>("/api/favorites/", { method: "POST", body: JSON.stringify({ product_id }) }),
   remove: (productId: number) =>
@@ -515,10 +526,21 @@ export const reviews = {
   average: (productId: number) =>
     request<{ product_id: number; average: number; count: number }>(`/api/reviews/product/${productId}/average`),
   mine: () => request<{ data: Review[] }>("/api/reviews/me"),
-  create: (data: { product_id: number; rating: number; comment?: string }) =>
-    request<Review>("/api/reviews/", { method: "POST", body: JSON.stringify(data) }),
-  update: (id: number, data: { rating?: number; comment?: string }) =>
-    request<Review>(`/api/reviews/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  create: (data: { product_id: number; rating: number; comment?: string; images?: File[] }) => {
+    const form = new FormData();
+    form.append('product_id', String(data.product_id));
+    form.append('rating', String(data.rating));
+    if (data.comment) form.append('comment', data.comment);
+    if (data.images) data.images.forEach((f) => form.append('images', f));
+    return request<Review>("/api/reviews/", { method: "POST", body: form });
+  },
+  update: (id: number, data: { rating?: number; comment?: string; images?: File[] }) => {
+    const form = new FormData();
+    if (data.rating !== undefined) form.append('rating', String(data.rating));
+    if (data.comment !== undefined) form.append('comment', data.comment);
+    if (data.images) data.images.forEach((f) => form.append('images', f));
+    return request<Review>(`/api/reviews/${id}`, { method: "PUT", body: form });
+  },
   delete: (id: number) =>
     request<void>(`/api/reviews/${id}`, { method: "DELETE" }),
 };
