@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GoogleLoginButton } from "@/components/google-login-button";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -49,6 +50,9 @@ export default function LoginPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          {/* Google Login Button */}
+          <GoogleLoginButton mode="login" onError={setError} />
 
           <div className="space-y-2">
             <label className="block text-xs uppercase tracking-wider text-stone-400">

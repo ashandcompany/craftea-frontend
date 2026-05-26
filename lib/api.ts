@@ -111,6 +111,8 @@ export const auth = {
     request<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<AuthResponse>("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  loginWithGoogle: (credential: string) =>
+    request<AuthResponse>("/api/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
   logout: () =>
     request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   me: () => request<User>("/api/auth/me"),

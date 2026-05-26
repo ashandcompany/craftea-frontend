@@ -11,7 +11,7 @@ import { useTheme } from "@/lib/theme-context";
 import {
   Search, Star, ShoppingCart, BarChart3, Store, Box, User,
   ChevronDown, Settings, LogOut, Sparkles, Users, Gift, FileText,
-  Menu, X, Sun, Moon,
+  Menu, X, Sun, Moon, Info, Wallet, Package,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -212,7 +212,7 @@ export function Navbar() {
                   }`}
                   aria-expanded={categoriesOpen}
                   aria-haspopup="true"
-                  onClick={() => setCategoriesOpen(!categoriesOpen)}
+                  onClick={() => setCategoriesOpen(true)}
                 >
                   catégories
                   <ChevronDown size={14} className={`transition-transform ${categoriesOpen ? "rotate-180" : ""}`} />
@@ -258,6 +258,7 @@ export function Navbar() {
                 { href: "/products", label: "découvrir" },
                 { href: "/artists", label: "artistes" },
                 { href: "/gifts", label: "idées cadeaux" },
+                { href: "/about", label: "à propos" },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -401,9 +402,13 @@ export function Navbar() {
                           <DropdownLink href="/account" icon={<BarChart3 size={15} />} label="tableau de bord" />
                           <DropdownLink href="/account/settings/shop" icon={<Store size={15} />} label="ma boutique" />
                           <DropdownLink href="/account/products" icon={<Box size={15} />} label="mes produits" />
+                          <DropdownLink href="/account/artist-orders" icon={<Package size={15} />} label="commandes reçues" />
                         </>
                       ) : (
-                        <DropdownLink href="/account" icon={<User size={15} />} label="mon compte" />
+                        <>
+                          <DropdownLink href="/account" icon={<User size={15} />} label="mon compte" />
+                          <DropdownLink href="/account/orders" icon={<Package size={15} />} label="mes commandes" />
+                        </>
                       )}
 
                       <DropdownLink href="/favorites" icon={<Star size={15} />} label="mes favoris" />
@@ -567,6 +572,7 @@ export function Navbar() {
                   { href: "/products", Icon: Sparkles, label: "découvrir" },
                   { href: "/artists", Icon: Users, label: "artistes" },
                   { href: "/gifts", Icon: Gift, label: "idées cadeaux" },
+                  { href: "/about", Icon: Info, label: "à propos" },
                   { href: "/categories", Icon: FileText, label: "catégories" },
                 ].map((item) => (
                   <Link
@@ -606,7 +612,7 @@ export function Navbar() {
             {/* Become artist CTA */}
             {user?.role === "buyer" && (
               <Link
-                href="/become-artist"
+                href="/account/settings/artist"
                 className="flex items-center justify-center gap-2 bg-stone-900 px-4 py-3 text-sm text-white transition-colors hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 <Sparkles size={16} /> devenir artiste
@@ -618,6 +624,29 @@ export function Navbar() {
               <div>
                 <p className="mb-2 text-[10px] uppercase tracking-widest text-stone-400 dark:text-stone-500">compte</p>
                 <div className="space-y-0.5">
+                  {user.role === "artist" ? (
+                    <>
+                      <Link
+                        href="/account/artist-orders"
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-100"
+                      >
+                        <Package size={18} strokeWidth={1.5} /> commandes reçues
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      href="/account/orders"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-100"
+                    >
+                      <Package size={18} strokeWidth={1.5} /> mes commandes
+                    </Link>
+                  )}
+                  <Link
+                    href="/account/wallet"
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-100"
+                  >
+                    <Wallet size={18} strokeWidth={1.5} /> mon portefeuille
+                  </Link>
                   <Link
                     href="/account/settings"
                     className="flex items-center gap-3 px-3 py-2.5 text-sm text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-100"

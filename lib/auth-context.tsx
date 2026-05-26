@@ -7,6 +7,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   register: (data: { firstname: string; lastname: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
 };
@@ -58,6 +59,11 @@ export function AuthProvider({
     setUser(res.user);
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    const res = await authApi.loginWithGoogle(credential);
+    setUser(res.user);
+  };
+
   const register = async (data: { firstname: string; lastname: string; email: string; password: string }) => {
     const res = await authApi.register(data);
     setUser(res.user);
@@ -70,7 +76,7 @@ export function AuthProvider({
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -127,7 +127,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <LucideIcons.Sparkles size={28} className="text-sage-500" strokeWidth={1.5} />
+                <LucideIcons.Sparkles size={28} className="text-sage-500" strokeWidth={0.75} />
                 <span className="text-xs text-sage-500 uppercase tracking-wider">// marketplace artisanale</span>
               </div>
               <div className="space-y-3">
@@ -226,7 +226,7 @@ export default function HomePage() {
           {cats.length > 0 && (
             <div>
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 border-2 border-sage-200 px-4 py-2 bg-sage-50/30">
+                <div className="inline-flex items-center gap-3 border-2 border-sage-200 px-4 py-2 bg-sage-50/30">
                   <LucideIcons.Grid size={14} className="text-sage-500" />
                   <span className="text-xs uppercase tracking-wider text-sage-700">explorer par univers</span>
                 </div>
@@ -289,8 +289,8 @@ export default function HomePage() {
           {/* Dernières créations */}
           <div>
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 border-2 border-sage-200 px-4 py-2 bg-sage-50/30">
-                <LucideIcons.Sparkles size={14} className="text-sage-500" />
+              <div className="inline-flex items-center gap-3 border-2 border-sage-200 px-4 py-2 bg-sage-50/30">
+                <LucideIcons.Sparkles size={14} strokeWidth={1.5} className="text-sage-500" />
                 <span className="text-xs uppercase tracking-wider text-sage-700">fraîchement sorties</span>
               </div>
               <h2 className="text-2xl font-light text-stone-800 mt-4">Dernières créations</h2>
