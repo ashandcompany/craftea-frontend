@@ -106,14 +106,6 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
 
   return (
     <div className="w-full">
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-stone-200"></div>
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-stone-400">ou</span>
-        </div>
-      </div>
       
       <div className="flex justify-center">
         <div 
@@ -130,6 +122,14 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
             <div className="text-sm text-stone-600">Connexion...</div>
           </div>
         )}
+      </div>
+            <div className="relative mt-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-stone-200"></div>
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white px-2 text-stone-400">ou</span>
+        </div>
       </div>
     </div>
   );
