@@ -1,29 +1,101 @@
 "use client";
 
-import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface GoogleLoginButtonProps {
   mode?: 'login' | 'register';
   onError?: (error: string) => void;
 }
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
 export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButtonProps) {
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [buttonReady, setButtonReady] = useState(false);
 
-  const handleGoogleResponse = async (credentialResponse: CredentialResponse) => {
-    if (!credentialResponse.credential) {
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      console.error('NEXT_PUBLIC_GOOGLE_CLIENT_ID not found');
+      onError?.('Configuration Google manquante');
+      return;
+    }
+
+    // Load Google Identity Services script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const buttonDiv = document.getElementById('google-signin-button');
+        if (buttonDiv) {
+          window.google.accounts.id.renderButton(
+            buttonDiv,
+            {
+              type: 'standard',
+              theme: 'outline',
+              size: 'large',
+              text: mode === 'register' ? 'signup_with' : 'signin_with',
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: 400,
+              locale: 'fr',
+            }
+          );
+          setButtonReady(true);
+        }
+      }
+    };
+
+    script.onerror = () => {
+      console.error('Failed to load Google Identity Services');
+      onError?.('Impossible de charger Google Sign-In');
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, [mode]);
+
+  const handleCredentialResponse = async (response: any) => {
+    if (!response.credential) {
       onError?.('Erreur lors de la connexion avec Google');
       return;
     }
 
     setLoading(true);
     try {
-      await loginWithGoogle(credentialResponse.credential);
+      await loginWithGoogle(response.credential);
       router.push('/');
     } catch (err: any) {
       onError?.(err.message || 'Erreur lors de la connexion avec Google');
@@ -43,34 +115,21 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
         </div>
       </div>
       
-      <div className="google-login-wrapper">
-        <GoogleLogin
-          onSuccess={handleGoogleResponse}
-          onError={() => onError?.('Erreur lors de la connexion avec Google')}
-          text={mode === 'register' ? 'signup_with' : 'signin_with'}
-          theme="outline"
-          size="large"
-          locale="fr"
+      <div className="flex justify-center">
+        <div 
+          id="google-signin-button" 
+          className={`transition-opacity ${buttonReady ? 'opacity-100' : 'opacity-0'}`}
         />
-        
-        <style jsx global>{`
-          .google-login-wrapper {
-            width: 100%;
-          }
-          .google-login-wrapper > div {
-            width: 100% !important;
-          }
-          .google-login-wrapper iframe {
-            width: 100% !important;
-          }
-          /* Custom styling to match the site theme */
-          .google-login-wrapper [role="button"] {
-            font-family: ui-monospace, monospace !important;
-            border-color: rgb(231 229 228) !important;
-            font-size: 0.875rem !important;
-            text-transform: lowercase !important;
-          }
-        `}</style>
+        {!buttonReady && !loading && (
+          <div className="h-10 flex items-center text-sm text-stone-400">
+            Chargement...
+          </div>
+        )}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+            <div className="text-sm text-stone-600">Connexion...</div>
+          </div>
+        )}
       </div>
     </div>
   );
