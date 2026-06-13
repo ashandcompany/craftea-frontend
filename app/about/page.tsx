@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { 
   Heart, 
-  Coffee, 
   Sparkles, 
   Users, 
   Globe, 
@@ -18,7 +17,6 @@ import {
   MapPin,
   Phone,
   Palette,
-  Camera,
   Rocket,
   Zap,
   Compass,
@@ -67,7 +65,7 @@ export default function AboutPage() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <Sparkles size={28} className="text-sage-500" strokeWidth={1.5} />
-                <span className="text-xs text-sage-500 uppercase tracking-wider">// since 2024</span>
+                <span className="text-xs text-sage-500 uppercase tracking-wider">// since 2026</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-light tracking-tight text-stone-900 leading-tight">
                 Là où la créativité
@@ -96,14 +94,14 @@ export default function AboutPage() {
             <div className="relative group">
               <div className="absolute -top-3 -left-3 w-full h-full border-2 border-sage-200 bg-sage-100/30 group-hover:rotate-2 transition-transform duration-300" />
               <div className="relative bg-white border-2 border-sage-200 p-3 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                <div className="aspect-square bg-linear-to-br from-sage-100 to-sage-50 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 left-0 w-32 h-32 bg-sage-300 rounded-full blur-3xl" />
-                  </div>
-                  <Camera size={48} className="text-sage-300" strokeWidth={1} />
-                  <div className="absolute bottom-2 right-2 text-[8px] text-sage-400 bg-white/80 px-1">
-                    📸 [image placeholder]
-                  </div>
+                <div className="aspect-square relative overflow-hidden">
+                  <Image
+                    src="/atelier1.webp"
+                    alt="Notre atelier Craftea"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
                 </div>
                 <div className="mt-2 text-center">
                   <p className="text-[10px] text-stone-400 font-mono">_notre_atelier.jpg</p>
@@ -134,11 +132,14 @@ export default function AboutPage() {
             </div>
             <div className="order-1 md:order-2">
               <div className="border-2 border-sage-200 bg-white p-3 shadow-md rotate-[-2deg] hover:rotate-0 transition-transform">
-                <div className="aspect-[4/3] bg-linear-to-tr from-amber-100 to-sage-100 flex items-center justify-center relative">
-                  <Coffee size={40} className="text-sage-400" strokeWidth={1} />
-                  <div className="absolute bottom-2 left-2 text-[8px] text-stone-400 bg-white/80 px-1">
-                    [notre_philosophie.png]
-                  </div>
+                <div className="aspect-[4/3] relative overflow-hidden">
+                  <Image
+                    src="/atelier2.webp"
+                    alt="Notre philosophie"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
                 </div>
               </div>
             </div>

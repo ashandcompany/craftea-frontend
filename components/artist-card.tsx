@@ -9,7 +9,7 @@ export function ArtistCard({ artist }: { artist: ArtistProfile }) {
   const initial = artist.id ? String(artist.id).charAt(0) : "?";
 
   return (
-    <div className="border border-stone-200 bg-paper-50 p-4 font-mono transition-colors dark:border-stone-700 dark:bg-stone-900">
+    <div className="z-10 border border-stone-200 bg-paper-50 p-4 font-mono transition-colors dark:border-stone-700 dark:bg-stone-900">
       {/* Banner & Avatar */}
       <div className="relative mb-8">
         {/* Banner */}
