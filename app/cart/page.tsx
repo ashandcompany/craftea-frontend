@@ -133,6 +133,91 @@ export function computeShopShipping(
   return shipping;
 }
 
+// ── Also Bought Section ──────────────────────────────────────────────
+function AlsoBoughtSection({
+  cartProductIds,
+  categoryIds,
+}: {
+  cartProductIds: number[];
+  categoryIds: number[];
+}) {
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (categoryIds.length === 0) { setLoaded(true); return; }
+
+    async function load() {
+      try {
+        const results = await Promise.allSettled(
+          categoryIds.slice(0, 3).map((catId) =>
+            productsApi.list({ category_id: catId, limit: 8 })
+          )
+        );
+        const merged: Product[] = [];
+        const seen = new Set<number>();
+        for (const r of results) {
+          if (r.status !== "fulfilled") continue;
+          for (const p of r.value.data) {
+            if (!seen.has(p.id) && !cartProductIds.includes(p.id) && p.is_active && p.stock > 0) {
+              seen.add(p.id);
+              merged.push(p);
+            }
+          }
+        }
+        setSuggestions(merged.slice(0, 6));
+      } finally {
+        setLoaded(true);
+      }
+    }
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!loaded || suggestions.length === 0) return null;
+
+  return (
+    <section className="mt-12 border-t border-sage-200 pt-8">
+      <div className="mb-5 flex items-center gap-3">
+        <Sparkle size={12} className="text-sage-500 shrink-0" />
+        <h2 className="text-sm uppercase tracking-wider text-sage-700">
+          Les clients qui ont acheté ces articles ont également acheté
+        </h2>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {suggestions.map((p) => {
+          const image = p.images?.[0]?.image_url;
+          return (
+            <Link
+              key={p.id}
+              href={`/products/${p.id}`}
+              className="group block border border-sage-200 bg-white p-2 transition-colors hover:border-sage-400"
+            >
+              <div className="mb-2 aspect-square overflow-hidden border border-sage-100 bg-sage-50">
+                {image ? (
+                  <img
+                    src={assetUrl(image, "product-images")}
+                    alt={p.title || ""}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sage-300">
+                    <Package size={20} strokeWidth={1} />
+                  </div>
+                )}
+              </div>
+              <p className="truncate text-xs text-stone-700 leading-tight">{p.title || "sans titre"}</p>
+              {p.price != null && (
+                <p className="mt-0.5 text-xs text-sage-600">{Number(p.price).toFixed(2)} €</p>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // ── Shop Group Component ──────────────────────────────────────────────
 function ShopGroup({
   shopId,
@@ -554,6 +639,18 @@ export default function CartPage() {
 
   const grandTotal = subtotal + totalShipping;
 
+  const cartProductIds = useMemo(() => items.map((i) => i.product_id), [items]);
+  const categoryIds = useMemo(() => {
+    const ids = [
+      ...new Set(
+        Object.values(productMap)
+          .map((p) => p.category_id)
+          .filter((id): id is number => id != null)
+      ),
+    ];
+    return ids;
+  }, [productMap]);
+
   const loading = authLoading || cartLoading || loadingProducts;
 
   if (loading) {
@@ -657,6 +754,9 @@ export default function CartPage() {
           </Link>
         </div>
       ) : (
+        <>
+        <AlsoBoughtSection cartProductIds={cartProductIds} categoryIds={categoryIds} />
+
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Liste des items groupés par boutique */}
           <div className="space-y-6 lg:col-span-2">
@@ -959,6 +1059,7 @@ export default function CartPage() {
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );

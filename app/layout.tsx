@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   keywords: "artisanat, fait main, créations uniques, artisans, marketplace",
 };
 
-async function getInitialUser(): Promise<User | null> {
+async function getInitialUser(): Promise<User | null | undefined> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value;
   if (!accessToken) return null;
@@ -31,7 +31,9 @@ async function getInitialUser(): Promise<User | null> {
     if (!res.ok) return null;
     return res.json();
   } catch {
-    return null;
+    // Backend unreachable — return undefined so the client retries client-side.
+    // (null would be treated as "confirmed unauthenticated" and skip the retry.)
+    return undefined;
   }
 }
 
