@@ -755,7 +755,6 @@ export default function CartPage() {
         </div>
       ) : (
         <>
-        <AlsoBoughtSection cartProductIds={cartProductIds} categoryIds={categoryIds} />
 
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Liste des items groupés par boutique */}
@@ -1059,6 +1058,8 @@ export default function CartPage() {
             </div>
           </div>
         </div>
+
+        <AlsoBoughtSection cartProductIds={cartProductIds} categoryIds={categoryIds} />
         </>
       )}
     </div>
