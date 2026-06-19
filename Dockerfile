@@ -1,7 +1,7 @@
 FROM node:24-alpine3.22 AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 FROM node:24-alpine3.22 AS builder
 WORKDIR /app
