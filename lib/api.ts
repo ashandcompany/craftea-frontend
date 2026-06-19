@@ -346,6 +346,7 @@ export interface Product {
   shop_id: number;
   category_id?: number;
   title?: string;
+  slug?: string;
   description?: string;
   price?: number;
   stock: number;
