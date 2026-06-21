@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
     users,
     auth,
     addresses as addressesApi,
+    artistRequests as artistRequestsApi,
     type Address,
+    type ArtistRequest,
+    type ArtistRequestMessage,
 } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Pencil, X, Plus, Loader, User, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, X, Plus, Loader, User, Camera, ChevronDown, ChevronUp, Palette, Send } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -102,6 +105,16 @@ export default function SettingsProfilePage() {
     const [allowPostal, setAllowPostal] = useLocalPref("craftea_allow_postal", false);
     const [allowPhone, setAllowPhone] = useLocalPref("craftea_allow_phone", false);
 
+    // -- Artist request ------------------------------------------------------
+    const [artistRequest, setArtistRequest] = useState<ArtistRequest | null | undefined>(undefined);
+    const [artistRequestLoading, setArtistRequestLoading] = useState(false);
+    const [artistRequestText, setArtistRequestText] = useState("");
+    const [artistRequestError, setArtistRequestError] = useState("");
+    const [artistRequestSubmitting, setArtistRequestSubmitting] = useState(false);
+    const [artistMessageText, setArtistMessageText] = useState("");
+    const [artistMessageSending, setArtistMessageSending] = useState(false);
+    const artistChatBottomRef = useRef<HTMLDivElement>(null);
+
     // -- Close account -------------------------------------------------------
     const [closeExpanded, setCloseExpanded] = useState(false);
     const [closeConfirm, setCloseConfirm] = useState("");
@@ -126,6 +139,12 @@ export default function SettingsProfilePage() {
             .then(setAddressList)
             .catch(() => { })
             .finally(() => setAddressLoading(false));
+
+        if (user.role === "buyer") {
+            artistRequestsApi.mine()
+                .then((r) => setArtistRequest(r))
+                .catch(() => setArtistRequest(null));
+        }
     }, [user]);
 
     // -- Profile handlers -----------------------------------------------------
@@ -281,6 +300,44 @@ export default function SettingsProfilePage() {
             await addressesApi.delete(id);
             setAddressList((prev) => prev.filter((a) => a.id !== id));
         } catch { }
+    };
+
+    // -- Artist request handlers ---------------------------------------------
+
+    const submitArtistRequest = async () => {
+        if (!artistRequestText.trim()) return;
+        setArtistRequestError("");
+        setArtistRequestSubmitting(true);
+        try {
+            const created = await artistRequestsApi.submit(artistRequestText.trim());
+            setArtistRequest(created);
+            setArtistRequestText("");
+        } catch (err: any) {
+            setArtistRequestError(err.message || "Erreur");
+        } finally {
+            setArtistRequestSubmitting(false);
+        }
+    };
+
+    const sendArtistMessage = async () => {
+        if (!artistMessageText.trim()) return;
+        setArtistMessageSending(true);
+        try {
+            const msg = await artistRequestsApi.addMessage(artistMessageText.trim());
+            setArtistRequest((prev) => {
+                if (!prev) return prev;
+                const updated: ArtistRequest = {
+                    ...prev,
+                    status: prev.status === "info_requested" ? "pending" : prev.status,
+                    messages: [...(prev.messages || []), msg as ArtistRequestMessage],
+                };
+                return updated;
+            });
+            setArtistMessageText("");
+            setTimeout(() => artistChatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        } catch { } finally {
+            setArtistMessageSending(false);
+        }
     };
 
     const formatDate = (dateString: string) =>
@@ -601,6 +658,131 @@ export default function SettingsProfilePage() {
                     )}
                 </div>
             </div>
+
+            {/* -- Devenir artiste (buyers only) -- */}
+            {user.role === "buyer" && (
+                <div className="mb-6 border border-stone-200">
+                    <div className="flex items-center gap-3 border-b border-stone-200 bg-stone-50 px-5 py-3">
+                        <Palette size={14} className="text-stone-500" />
+                        <span className="text-sm uppercase tracking-wider text-stone-600">Devenir artiste</span>
+                        {artistRequest && (
+                            <span className={`ml-auto inline-block border px-2 py-0.5 text-[10px] ${
+                                artistRequest.status === "pending" ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : artistRequest.status === "info_requested" ? "border-blue-200 bg-blue-50 text-blue-700"
+                                : artistRequest.status === "approved" ? "border-green-200 bg-green-50 text-green-700"
+                                : "border-stone-200 bg-stone-50 text-stone-500"
+                            }`}>
+                                {artistRequest.status === "pending" ? "en cours d'examen"
+                                    : artistRequest.status === "info_requested" ? "précisions demandées"
+                                    : artistRequest.status === "approved" ? "approuvée"
+                                    : "refusée"}
+                            </span>
+                        )}
+                    </div>
+                    <div className="p-5">
+                        {artistRequest === undefined ? (
+                            <div className="py-4 text-center text-stone-400 text-xs">chargement...</div>
+                        ) : artistRequest === null || artistRequest.status === "rejected" ? (
+                            /* No request or last one was rejected — show submission form */
+                            <div className="space-y-4">
+                                {artistRequest?.status === "rejected" && (
+                                    <div className="border border-stone-200 bg-stone-50 p-3 text-xs text-stone-500">
+                                        Votre précédente demande a été refusée. Vous pouvez en soumettre une nouvelle.
+                                    </div>
+                                )}
+                                <p className="text-xs text-stone-500">
+                                    Expliquez votre activité artisanale, vos créations et pourquoi vous souhaitez rejoindre Craftea en tant qu&apos;artiste.
+                                </p>
+                                {artistRequestError && (
+                                    <Alert variant="destructive" className="rounded-none border border-stone-300 bg-transparent font-mono">
+                                        <AlertDescription>{artistRequestError}</AlertDescription>
+                                    </Alert>
+                                )}
+                                <textarea
+                                    value={artistRequestText}
+                                    onChange={(e) => setArtistRequestText(e.target.value)}
+                                    placeholder="Décrivez votre activité artisanale, vos techniques, vos créations..."
+                                    rows={5}
+                                    className="w-full resize-none border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                                />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-stone-400">{artistRequestText.length}/2000</span>
+                                    <button
+                                        onClick={submitArtistRequest}
+                                        disabled={artistRequestSubmitting || !artistRequestText.trim()}
+                                        className="flex items-center gap-2 border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+                                    >
+                                        {artistRequestSubmitting && <Loader size={12} className="animate-spin" />}
+                                        {artistRequestSubmitting ? "envoi..." : "envoyer ma demande →"}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : artistRequest.status === "approved" ? (
+                            /* Approved — prompt to reconnect */
+                            <div className="space-y-3 text-center py-4">
+                                <p className="text-sm text-stone-700">Votre demande a été approuvée !</p>
+                                <p className="text-xs text-stone-400">Reconnectez-vous pour accéder à votre espace artiste.</p>
+                                <button
+                                    onClick={() => { logout(); }}
+                                    className="border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700"
+                                >
+                                    se reconnecter →
+                                </button>
+                            </div>
+                        ) : (
+                            /* Active request — show chat thread */
+                            <div className="space-y-4">
+                                <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                                    {(artistRequest.messages || []).map((msg) => (
+                                        <div key={msg.id} className={`flex gap-3 ${msg.sender_role === "user" ? "flex-row-reverse" : ""}`}>
+                                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center border text-[10px] uppercase ${
+                                                msg.sender_role === "admin" ? "border-stone-300 bg-stone-100 text-stone-500" : "border-stone-800 bg-stone-800 text-stone-50"
+                                            }`}>
+                                                {msg.sender_role === "admin" ? "A" : user.firstname?.[0] || "U"}
+                                            </div>
+                                            <div className={`max-w-[80%] space-y-1 ${msg.sender_role === "user" ? "items-end" : "items-start"} flex flex-col`}>
+                                                <div className={`border px-3 py-2 text-sm ${
+                                                    msg.sender_role === "admin" ? "border-stone-200 bg-white text-stone-700" : "border-stone-800 bg-stone-800 text-stone-50"
+                                                }`}>
+                                                    {msg.content}
+                                                </div>
+                                                <span className="text-[10px] text-stone-400">
+                                                    {new Date(msg.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div ref={artistChatBottomRef} />
+                                </div>
+
+                                {artistRequest.status === "info_requested" && (
+                                    <div className="border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                                        L&apos;équipe Craftea a besoin de précisions. Répondez ci-dessous pour relancer l&apos;examen.
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={artistMessageText}
+                                        onChange={(e) => setArtistMessageText(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendArtistMessage(); } }}
+                                        placeholder="Écrire un message..."
+                                        className="flex-1 border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-600"
+                                    />
+                                    <button
+                                        onClick={sendArtistMessage}
+                                        disabled={artistMessageSending || !artistMessageText.trim()}
+                                        className="flex items-center gap-1.5 border border-stone-800 bg-stone-800 px-3 py-2 text-xs text-stone-50 hover:bg-stone-700 disabled:opacity-50"
+                                    >
+                                        {artistMessageSending ? <Loader size={12} className="animate-spin" /> : <Send size={12} />}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* -- Fermer le compte -- */}
             <div className="border border-stone-200">

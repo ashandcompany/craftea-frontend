@@ -10,17 +10,19 @@ import {
   orders as ordersApi,
   categories as categoriesApi,
   tags as tagsApi,
+  artistRequests as artistRequestsApi,
   type User,
   type ArtistProfile,
   type Order,
   type Category,
   type Tag,
+  type ArtistRequest,
   OrderStatus,
 } from "@/lib/api";
 import {
   Users, Palette, ShoppingBag, FolderOpen, Tag as TagIcon,
   ArrowRight, Hourglass, Shield, AlertTriangle,
-  Clock, Wallet,
+  Clock, Wallet, MessageSquare,
 } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const [ordersList, setOrdersList] = useState<Order[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [tagsList, setTagsList] = useState<Tag[]>([]);
+  const [artistRequestsList, setArtistRequestsList] = useState<ArtistRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function AdminDashboard() {
       ordersApi.list().then(setOrdersList).catch(() => {}),
       categoriesApi.list().then(setCategoriesList).catch(() => {}),
       tagsApi.list().then(setTagsList).catch(() => {}),
+      artistRequestsApi.adminList().then(setArtistRequestsList).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [user]);
 
@@ -57,9 +61,11 @@ export default function AdminDashboard() {
   const pendingArtists = artistsList.filter((a) => !a.validated).length;
   const pendingOrders = ordersList.filter((o) => o.status === OrderStatus.PENDING).length;
   const inactiveUsers = usersList.filter((u) => !u.is_active).length;
+  const pendingRequests = artistRequestsList.filter((r) => r.status === "pending" || r.status === "info_requested").length;
 
   const stats = [
     { label: "utilisateurs", value: usersList.length, icon: Users, href: "/account/admin/users", accent: inactiveUsers > 0 ? `${inactiveUsers} inactif${inactiveUsers > 1 ? "s" : ""}` : undefined },
+    { label: "candidatures", value: artistRequestsList.length, icon: MessageSquare, href: "/account/admin/artist-requests", accent: pendingRequests > 0 ? `${pendingRequests} en attente` : undefined },
     { label: "artistes", value: artistsList.length, icon: Palette, href: "/account/admin/artists", accent: pendingArtists > 0 ? `${pendingArtists} en attente` : undefined },
     { label: "wallets", value: artistsList.length, icon: Wallet, href: "/account/admin/wallets" },
     { label: "commandes", value: ordersList.length, icon: ShoppingBag, href: "/account/admin/orders", accent: pendingOrders > 0 ? `${pendingOrders} en attente` : undefined },
@@ -80,8 +86,20 @@ export default function AdminDashboard() {
       ) : (
         <div className="space-y-8">
           {/* Alerts */}
-          {(pendingArtists > 0 || pendingOrders > 0) && (
+          {(pendingRequests > 0 || pendingArtists > 0 || pendingOrders > 0) && (
             <div className="space-y-2">
+              {pendingRequests > 0 && (
+                <Link
+                  href="/account/admin/artist-requests"
+                  className="flex items-center gap-3 border border-amber-200 bg-amber-50 p-3 hover:border-amber-300 transition-colors"
+                >
+                  <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                  <p className="text-sm text-amber-800">
+                    {pendingRequests} candidature{pendingRequests > 1 ? "s" : ""} artiste{pendingRequests > 1 ? "s" : ""} en attente
+                  </p>
+                  <ArrowRight size={14} className="text-amber-400 ml-auto shrink-0" />
+                </Link>
+              )}
               {pendingArtists > 0 && (
                 <Link
                   href="/account/admin/artists"
@@ -142,6 +160,22 @@ export default function AdminDashboard() {
                   <div>
                     <p className="text-sm text-stone-800">Utilisateurs</p>
                     <p className="text-[10px] text-stone-400">gérer les comptes</p>
+                  </div>
+                </div>
+                <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+              </Link>
+
+              <Link
+                href="/account/admin/artist-requests"
+                className="group flex items-center justify-between border border-stone-200 p-4 hover:border-stone-400 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare size={18} className="text-stone-400 group-hover:text-stone-600" />
+                  <div>
+                    <p className="text-sm text-stone-800">Candidatures artistes</p>
+                    <p className="text-[10px] text-stone-400">
+                      {pendingRequests > 0 ? `${pendingRequests} en attente` : "examiner les demandes"}
+                    </p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-stone-300 group-hover:text-stone-500" />

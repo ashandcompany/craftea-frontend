@@ -77,6 +77,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const adminNav = [
     { href: "/account/admin", icon: Shield, label: "administration" },
     { href: "/account/admin/users", icon: Users, label: "utilisateurs" },
+    { href: "/account/admin/artist-requests", icon: MessageSquare, label: "candidatures" },
     { href: "/account/admin/artists", icon: Palette, label: "artistes" },
     { href: "/account/admin/wallets", icon: Wallet, label: "wallets" },
     { href: "/account/admin/orders", icon: ShoppingBag, label: "commandes" },

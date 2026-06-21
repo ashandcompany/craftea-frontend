@@ -257,7 +257,7 @@ export default function ArtistVerificationPage() {
             </h2>
             <p className="text-sm text-stone-500 mb-4 leading-relaxed">
               Uploadez des photos de vos œuvres en cours de création (WIP), de votre atelier, des
-              croquis, des outils ou tout document attestant que vous Ãªtes bien l'auteur de vos
+              croquis, des outils ou tout document attestant que vous êtes bien l'auteur de vos
               créations. Formats acceptés : JPG, PNG, WEBP, PDF. Maximum 5 fichiers, 15 Mo chacun.
             </p>
 

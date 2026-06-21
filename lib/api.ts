@@ -327,6 +327,44 @@ export const shops = {
     request<Record<number, ShopShippingMethod[]>>(`/api/shops/shipping-methods/bulk?ids=${shopIds.join(',')}`),
 };
 
+// ─── Artist Requests ────────────────────────────────────────────────────
+
+export interface ArtistRequestMessage {
+  id: number;
+  request_id: number;
+  sender_role: "user" | "admin";
+  sender_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface ArtistRequest {
+  id: number;
+  user_id: number;
+  status: "pending" | "info_requested" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
+  user?: { id: number; firstname: string; lastname: string; email: string };
+  messages?: ArtistRequestMessage[];
+}
+
+export const artistRequests = {
+  submit: (content: string) =>
+    request<ArtistRequest>("/api/artist-requests", { method: "POST", body: JSON.stringify({ content }) }),
+  mine: () =>
+    request<ArtistRequest | null>("/api/artist-requests/mine"),
+  addMessage: (content: string) =>
+    request<ArtistRequestMessage>("/api/artist-requests/mine/messages", { method: "POST", body: JSON.stringify({ content }) }),
+  adminList: () =>
+    request<ArtistRequest[]>("/api/artist-requests"),
+  adminGet: (id: number) =>
+    request<ArtistRequest>(`/api/artist-requests/${id}`),
+  adminAddMessage: (id: number, content: string) =>
+    request<ArtistRequestMessage>(`/api/artist-requests/${id}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
+  adminDecide: (id: number, action: "approve" | "reject") =>
+    request<{ id: number; status: string }>(`/api/artist-requests/${id}/decide`, { method: "PATCH", body: JSON.stringify({ action }) }),
+};
+
 // ─── Catalog ────────────────────────────────────────────────────────────
 
 export interface ProductVariantOption {
