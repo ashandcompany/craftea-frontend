@@ -57,8 +57,8 @@ export function Footer() {
             <h4 className="text-xs uppercase tracking-wider text-stone-400 dark:text-stone-500">mon compte</h4>
             <ul className="space-y-2">
               <li>
-                <Link 
-                  href="/profile" 
+                <Link
+                  href="/account"
                   className="text-sm text-stone-600 transition-colors hover:text-stone-800 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
                 >
                   profil
@@ -73,8 +73,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="/profile/addresses" 
+                <Link
+                  href="/account/settings"
                   className="text-sm text-stone-600 transition-colors hover:text-stone-800 hover:underline dark:text-stone-400 dark:hover:text-stone-200"
                 >
                   adresses
