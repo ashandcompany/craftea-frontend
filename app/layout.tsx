@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "Craftea - L'artisanat authentique",
   description: "Découvrez des créations uniques faites à la main par des artisans passionnés. Bijoux, céramique, textile et bien plus.",
   keywords: "artisanat, fait main, créations uniques, artisans, marketplace",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 async function getInitialUser(): Promise<User | null | undefined> {
