@@ -12,10 +12,10 @@ env:
 # ─────────────────────────────────────────────────────────────────────────────
 # Secrets à configurer dans le repo FRONTEND (Settings > Secrets > Actions) :
 #
-#   SERVER_HOST            = 51.178.27.251
+#   SERVER_HOST            = craftea.ddnsfree.com
 #   SERVER_USER            = debian
 #   SERVER_SSH_KEY         = contenu de ~/.ssh/id_rsa
-#   SERVER_SSH_KNOWN_HOST  = sortie de : ssh-keyscan 51.178.27.251
+#   SERVER_SSH_KNOWN_HOST  = sortie de : ssh-keyscan craftea.ddnsfree.com
 #
 #   DOMAIN                 = craftea.fr
 #   STRIPE_PUBLISHABLE_KEY = pk_live_...

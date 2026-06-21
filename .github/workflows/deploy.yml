@@ -10,10 +10,10 @@ env:
 # ─────────────────────────────────────────────────────────────────────────────
 # Secrets à configurer dans le repo FRONTEND (Settings > Secrets > Actions) :
 #
-#   SERVER_HOST            = 51.178.27.251
+#   SERVER_HOST            = craftea.ddnsfree.com
 #   SERVER_USER            = debian
 #   SERVER_SSH_KEY         = contenu de ~/.ssh/id_rsa
-#   SERVER_SSH_KNOWN_HOST  = sortie de : ssh-keyscan 51.178.27.251
+#   SERVER_SSH_KNOWN_HOST  = sortie de : ssh-keyscan craftea.ddnsfree.com
 #
 #   STRIPE_PUBLISHABLE_KEY = pk_live_...
 #   GOOGLE_CLIENT_ID       = ...apps.googleusercontent.com
@@ -52,8 +52,9 @@ jobs:
             ${{ env.REGISTRY }}/craftea-frontend:${{ github.sha }}
             ${{ env.REGISTRY }}/craftea-frontend:latest
           build-args: |
-            NEXT_PUBLIC_API_URL=http://${{ secrets.SERVER_HOST }}:3001
-            NEXT_PUBLIC_MINIO_URL=http://${{ secrets.SERVER_HOST }}:9000
+            NEXT_PUBLIC_API_URL=https://craftea.ddnsfree.com
+            NEXT_PUBLIC_MINIO_URL=https://craftea.ddnsfree.com/files
+            NEXT_PUBLIC_APP_URL=https://craftea.ddnsfree.com
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
 
