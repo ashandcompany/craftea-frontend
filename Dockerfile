@@ -25,7 +25,8 @@ FROM gcr.io/distroless/nodejs24-debian12 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
