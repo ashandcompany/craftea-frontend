@@ -55,6 +55,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account/settings", icon: User, label: "mon profil" },
     { href: "/account/settings/privacy", icon: Lock, label: "confidentialité" },
     { href: "/account/orders", icon: ShoppingBag, label: "mes commandes" },
+    { href: "/account/messages", icon: MessageSquare, label: "messages" },
     { href: "/favorites", icon: Heart, label: "mes favoris" },
   ];
 
@@ -68,6 +69,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { href: "/account/settings/shop", icon: Store, label: "mes boutiques" },
     { href: "/account/products", icon: Box, label: "mes produits" },
     { href: "/account/artist-orders", icon: Truck, label: "commandes reçues" },
+    { href: "/account/messages", icon: MessageSquare, label: "messages" },
     { href: "/account/orders", icon: ShoppingBag, label: "mes achats" },
     { href: "/favorites", icon: Heart, label: "mes favoris" },
   ];

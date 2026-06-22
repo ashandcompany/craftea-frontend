@@ -1,22 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { artists as artistsApi, products as productsApi, type ArtistProfile, type Product } from "@/lib/api";
+import { artists as artistsApi, products as productsApi, messaging as messagingApi, type ArtistProfile, type Product } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { ProductCard } from "@/components/product-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assetUrl } from "@/lib/utils";
-import { Hourglass, Pin } from 'lucide-react';
+import { Hourglass, Pin, MessageSquare, Loader } from 'lucide-react';
 
 export default function ArtistDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { user } = useAuth();
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [shopProducts, setShopProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedShop, setSelectedShop] = useState<number | null>(null);
+  const [contacting, setContacting] = useState(false);
+
+  const handleContact = async () => {
+    if (!artist?.user_id) return;
+    if (!user) {
+      router.push(`/login?redirect=/artists/${id}`);
+      return;
+    }
+    setContacting(true);
+    try {
+      const { id: convId } = await messagingApi.getOrCreate(artist.user_id);
+      router.push(`/account/messages?c=${convId}`);
+    } catch {
+      setContacting(false);
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -169,6 +188,24 @@ export default function ArtistDetailPage() {
                 </a>
               )
             ))}
+          </div>
+        )}
+
+        {/* Contact button — hidden when viewing own profile */}
+        {(!user || user.id !== artist.user_id) && (
+          <div className="mt-5">
+            <button
+              onClick={handleContact}
+              disabled={contacting}
+              className="inline-flex items-center gap-2 border border-stone-800 px-4 py-2 text-xs uppercase tracking-wider text-stone-800 transition-colors hover:bg-stone-800 hover:text-white disabled:opacity-50"
+            >
+              {contacting ? (
+                <Loader size={12} className="animate-spin" />
+              ) : (
+                <MessageSquare size={12} />
+              )}
+              Contacter l'artisan
+            </button>
           </div>
         )}
       </div>

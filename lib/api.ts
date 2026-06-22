@@ -718,6 +718,70 @@ export interface WalletTransaction {
   created_at: string;
 }
 
+// ─── Messaging ──────────────────────────────────────────────────────────────
+
+export interface Conversation {
+  id: number;
+  buyer_id: number;
+  artist_id: number;
+  other_user_id: number;
+  other_user_name: string | null;
+  last_message: string | null;
+  last_message_at: string | null;
+  last_message_mine: boolean | null;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface ConversationDetail {
+  conversation: {
+    id: number;
+    buyer_id: number;
+    artist_id: number;
+    other_user_id: number;
+    other_user_name: string | null;
+  };
+  total: number;
+  page: number;
+  limit: number;
+  data: ConversationMessage[];
+}
+
+export const messaging = {
+  unreadCount: () =>
+    request<{ count: number }>("/api/messages/unread-count"),
+  listConversations: () =>
+    request<Conversation[]>("/api/messages/conversations"),
+  getOrCreate: (artistUserId: number) =>
+    request<{ id: number }>("/api/messages/conversations", {
+      method: "POST",
+      body: JSON.stringify({ artist_user_id: artistUserId }),
+    }),
+  getMessages: (conversationId: number, page = 1) =>
+    request<ConversationDetail>(`/api/messages/conversations/${conversationId}?page=${page}`),
+  send: (conversationId: number, content: string) =>
+    request<ConversationMessage>(`/api/messages/conversations/${conversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }),
+  markRead: (conversationId: number) =>
+    request<{ ok: boolean }>(`/api/messages/conversations/${conversationId}/read`, {
+      method: "PATCH",
+    }),
+};
+
+// ─── Payments ───────────────────────────────────────────────────────────────
+
 export const payments = {
   /** Create a Stripe PaymentIntent — returns Payment with stripe_client_secret */
   createIntent: (data: { order_id?: number; amount: number; currency?: string }) =>
