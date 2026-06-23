@@ -6,8 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const COMMISSION = {
-  RATE: 0.075,      // 7.5%
-  FIXED_EUR: 0.15,  // 0.15€
+  RATE: 0.05,        // 5% brut prélevé sur la transaction
+  FIXED_EUR: 0.25,   // 0.25€ fixe (couvre le fixe Stripe)
+} as const;
+
+// Frais Stripe selon origine de la carte (pour affichage transparent côté artisan)
+export const STRIPE_FEES = {
+  EEA: { rate: 0.015, fixedEur: 0.25 },  // 1.5% + 0.25€
+  UK:  { rate: 0.025, fixedEur: 0.25 },  // 2.5% + 0.25€
 } as const;
 
 /** Calcule la commission plateforme en euros pour un montant en euros. */
