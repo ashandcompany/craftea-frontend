@@ -14,26 +14,20 @@ export function ArtistCard({ artist }: { artist: ArtistProfile }) {
       <div className="relative mb-8">
         {/* Banner */}
         <div className="h-16 border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800">
-          {artist.banner_url && (
-            <img 
-              src={assetUrl(artist.banner_url, "artist-images")} 
-              alt="" 
-              className="h-full w-full object-cover"
-            />
-          )}
+          <img
+            src={artist.banner_url ? assetUrl(artist.banner_url, "artist-images") : "/placeholder_banner_artist.jpg"}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         </div>
-        
+
         {/* Avatar */}
         <div className="absolute -bottom-6 left-2 flex h-12 w-12 items-center justify-center border border-stone-300 bg-paper-50 text-xs uppercase text-stone-500 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400">
-          {artist.logo_url ? (
-            <img 
-              src={assetUrl(artist.logo_url, "artist-images")} 
-              alt={`Artist ${artist.id}`} 
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span>A{initial}</span>
-          )}
+          <img
+            src={artist.logo_url ? assetUrl(artist.logo_url, "artist-images") : "/placeholder_user_artist.jpg"}
+            alt={`Artist ${artist.id}`}
+            className="h-full w-full object-cover"
+          />
         </div>
       </div>
 

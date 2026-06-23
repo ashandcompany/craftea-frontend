@@ -127,13 +127,11 @@ export default function ArtistDetailPage() {
 
       {/* Artist Banner */}
       <div className="mb-6 border border-stone-200 bg-stone-100 h-48 sm:h-56">
-        {artist.banner_url ? (
-          <img src={assetUrl(artist.banner_url, "artist-images")} alt={`Bannière artiste #${artist.id}`} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-stone-400">
-            <span className="text-sm">[bannière artiste]</span>
-          </div>
-        )}
+        <img
+          src={artist.banner_url ? assetUrl(artist.banner_url, "artist-images") : "/placeholder_banner_artist.jpg"}
+          alt={`Bannière artiste #${artist.id}`}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       {/* Artist Profile header */}
@@ -141,11 +139,11 @@ export default function ArtistDetailPage() {
         <div className="flex items-start gap-4">
           {/* Artist Avatar */}
           <div className="flex h-20 w-20 items-center justify-center border border-stone-300 bg-stone-50 text-lg uppercase text-stone-500">
-            {artist.logo_url ? (
-              <img src={assetUrl(artist.logo_url, "artist-images")} alt={`Artiste ${artist.id}`} className="h-full w-full object-cover" />
-            ) : (
-              <span>A{artist.id}</span>
-            )}
+            <img
+              src={artist.logo_url ? assetUrl(artist.logo_url, "artist-images") : "/placeholder_user_artist.jpg"}
+              alt={`Artiste ${artist.id}`}
+              className="h-full w-full object-cover"
+            />
           </div>
 
           {/* Artist Info */}
