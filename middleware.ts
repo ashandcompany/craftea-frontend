@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (pathname.startsWith(ADMIN_PREFIX) && payload.role !== "ADMIN") {
+  if (pathname.startsWith(ADMIN_PREFIX) && payload.role !== "admin") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
