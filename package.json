@@ -26,6 +26,7 @@
     "next": "^16.2.9",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
+    "react-cookie-manager": "^5.3.0",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.5.0"
   },
