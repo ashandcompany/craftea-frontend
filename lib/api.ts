@@ -116,6 +116,7 @@ export const auth = {
   logout: () =>
     request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   me: () => request<User>("/api/auth/me"),
+  silentRefresh: () => doRefresh(),
   forgotPassword: (email: string) =>
     request<{ ok: boolean }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
   resetPassword: (token: string, newPassword: string) =>

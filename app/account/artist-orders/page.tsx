@@ -281,16 +281,18 @@ export default function ArtistOrdersPage() {
                         − commission Craftea ({COMMISSION.RATE * 100} % + {COMMISSION.FIXED_EUR.toFixed(2)} €) : {calculateFeeEur(Number(order.total)).toFixed(2)} €
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-stone-400 pl-3.5">
-                      <span className="font-mono">
-                        dont frais Stripe carte EEE : {(Number(order.total) * STRIPE_FEES.EEA.rate + STRIPE_FEES.EEA.fixedEur).toFixed(2)} € → net plateforme {((COMMISSION.RATE - STRIPE_FEES.EEA.rate) * 100).toFixed(1)} %
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-stone-400 pl-3.5">
-                      <span className="font-mono">
-                        dont frais Stripe carte UK : {(Number(order.total) * STRIPE_FEES.UK.rate + STRIPE_FEES.UK.fixedEur).toFixed(2)} € → net plateforme {((COMMISSION.RATE - STRIPE_FEES.UK.rate) * 100).toFixed(1)} %
-                      </span>
-                    </div>
+                    {(() => {
+                      const isUK = order.shipping_zone === "world";
+                      const fees = isUK ? STRIPE_FEES.UK : STRIPE_FEES.EEA;
+                      const label = isUK ? "carte hors-EEE" : "carte EEE";
+                      return (
+                        <div className="flex items-center gap-1.5 text-[11px] text-stone-400 pl-3.5">
+                          <span className="font-mono">
+                            dont frais Stripe {label} : {(Number(order.total) * fees.rate + fees.fixedEur).toFixed(2)} € → net plateforme {((COMMISSION.RATE - fees.rate) * 100).toFixed(1)} %
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-mono">
