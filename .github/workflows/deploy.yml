@@ -57,9 +57,9 @@ jobs:
             NEXT_PUBLIC_APP_URL=https://craftea.ddnsfree.com
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://craftea.ddnsfree.com/stats/script.js
+            NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://craftea.ddnsfree.com:3009/script.js
             NEXT_PUBLIC_UMAMI_WEBSITE_ID=eb09285b-2326-4dc6-8de8-133a375b3a37
-            NEXT_PUBLIC_UMAMI_HOST_URL=https://craftea.ddnsfree.com/stats
+            NEXT_PUBLIC_UMAMI_HOST_URL=https://craftea.ddnsfree.com:3009
 
       - name: Setup SSH
         run: |
