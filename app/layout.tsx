@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/navbar";
@@ -49,8 +50,17 @@ export default async function RootLayout({
 
   return (
     <html lang="fr" className="scroll-smooth" suppressHydrationWarning>
-      <body 
-        suppressHydrationWarning 
+      <Script
+        src="https://craftea.ddnsfree.com:3009/script.js"
+        data-website-id={
+          process.env.NODE_ENV === "production"
+            ? "2ede8fe0-7bce-4ded-8920-069a294b8b46"
+            : "eb09285b-2326-4dc6-8de8-133a375b3a37"
+        }
+        strategy="afterInteractive"
+      />
+      <body
+        suppressHydrationWarning
         className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased transition-colors dark:bg-stone-950 dark:text-stone-200`}
       >
         <Providers initialUser={initialUser}>
