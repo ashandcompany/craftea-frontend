@@ -7,7 +7,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      include: ['lib/utils.ts', 'utils/photon.ts'],
+      include: ['lib/utils.ts', 'lib/email-templates.ts', 'utils/photon.ts', 'utils/cn.ts'],
       thresholds: {
         lines: 85,
         functions: 85,
