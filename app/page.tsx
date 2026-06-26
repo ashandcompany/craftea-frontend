@@ -1,20 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { products, categories, artists, type Product, type Category } from "@/lib/api";
 import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import * as LucideIcons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+  Sparkles, Heart, Users, Star, Palette, Compass, Rocket, Award, Grid3x3,
+  Gem, Diamond, Crown, Watch, Scissors, Shirt, Layers, Paintbrush, Pen, Pencil,
+  Leaf, Flower2, TreePine, Sun, Moon, Home, Coffee, Utensils, Cake, Flame,
+  Hammer, Wrench, ShoppingBag, Package, Box, Gift, Tag, Globe, Camera, Book,
+  Music, Baby, Anchor, Fish, Feather, Trophy, type LucideIcon,
+} from "lucide-react";
 
-// Fonction pour obtenir un composant icône par son nom
+const ICON_MAP: Record<string, LucideIcon> = {
+  Sparkles, Heart, Users, Star, Palette, Compass, Rocket, Award, Grid3x3,
+  Gem, Diamond, Crown, Watch, Scissors, Shirt, Layers, Paintbrush, Pen, Pencil,
+  Leaf, Flower2, TreePine, Sun, Moon, Home, Coffee, Utensils, Cake, Flame,
+  Hammer, Wrench, ShoppingBag, Package, Box, Gift, Tag, Globe, Camera, Book,
+  Music, Baby, Anchor, Fish, Feather, Trophy,
+};
+
 function getLucideIcon(iconName?: string): LucideIcon | null {
   if (!iconName) return null;
-  const icon = (LucideIcons as Record<string, unknown>)[iconName];
-  if (typeof icon !== "function") return null;
-  return icon as LucideIcon;
+  return ICON_MAP[iconName] ?? null;
 }
 
 function formatCount(n: number | null): string {
@@ -35,31 +46,7 @@ export default function HomePage() {
   const [retryDelayMs, setRetryDelayMs] = useState(0);
   const [, setForceUpdate] = useState(0);
 
-  // Effet machine à écrire
-  const [displayText, setDisplayText] = useState("");
-  const [showCursor, setShowCursor] = useState(true);
   const fullText = "L'artisanat authentique";
-
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i <= fullText.length) {
-        setDisplayText(fullText.slice(0, i));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    const cursorTimer = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-
-    return () => {
-      clearInterval(timer);
-      clearInterval(cursorTimer);
-    };
-  }, []);
 
   // Force re-render tous les 100ms pour mettre à jour le countdown
   useEffect(() => {
@@ -130,14 +117,19 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <LucideIcons.Sparkles size={28} className="text-sage-500 dark:text-sage-400" strokeWidth={0.75} />
+                <Sparkles size={28} className="text-sage-500 dark:text-sage-400" strokeWidth={0.75} />
                 <span className="text-xs text-sage-500 dark:text-sage-400 uppercase tracking-wider">{"// marketplace artisanale"}</span>
               </div>
               <div className="space-y-3">
                 <h1 className="text-4xl md:text-5xl font-light tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
                   <span className="relative">
-                    {displayText}
-                    <span className={`absolute -right-5 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600 dark:text-sage-400`}>_</span>
+                    <span
+                      className="inline-block overflow-hidden"
+                      style={{ animation: 'typing 2.3s steps(23, end) both' }}
+                    >
+                      {fullText}
+                    </span>
+                    <span className="absolute -right-5 text-sage-600 dark:text-sage-400">_</span>
                   </span>
                   <span className="block text-sage-600 dark:text-sage-400">fait main & unique</span>
                 </h1>
@@ -178,10 +170,13 @@ export default function HomePage() {
               <div className="absolute -top-3 -left-3 w-full h-full border-2 border-sage-200 dark:border-sage-800 bg-sage-100/30 dark:bg-sage-900/30 group-hover:rotate-2 transition-transform duration-300" />
               <div className="relative bg-white dark:bg-stone-900 border-2 border-sage-200 dark:border-sage-800 p-3 shadow-lg group-hover:shadow-xl transition-all duration-300">
                 <div className="aspect-square bg-linear-to-br from-sage-100 to-sage-50 dark:from-sage-900 dark:to-stone-900 flex items-center justify-center relative overflow-hidden">
-                  <img
+                  <Image
                     src="/hihi.webp"
-                    className="w-full h-full object-cover"
                     alt="Artisanat authentique"
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="(max-width: 768px) calc(100vw - 2rem), 45vw"
                   />
                   <div className="absolute bottom-2 right-2 text-[8px] text-sage-400 dark:text-sage-500 bg-white/80 dark:bg-stone-900/80 px-1">
                     📸 [atelier_artisan.jpg]
@@ -208,10 +203,10 @@ export default function HomePage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { value: totalProducts !== null ? formatCount(totalProducts) : '—', label: "Créations", icon: LucideIcons.Heart, desc: 'pièces uniques' },
-                { value: totalArtists !== null ? formatCount(totalArtists) : '—', label: "Artisans", icon: LucideIcons.Users, desc: 'créateurs passionnés' },
-                { value: "98%", label: "Satisfaction", icon: LucideIcons.Star, desc: 'clients enchantés' },
-                { value: cats.length > 0 ? String(cats.length) : '—', label: "Catégories", icon: LucideIcons.Palette, desc: 'univers créatifs' },
+                { value: totalProducts !== null ? formatCount(totalProducts) : '—', label: "Créations", icon: Heart, desc: 'pièces uniques' },
+                { value: totalArtists !== null ? formatCount(totalArtists) : '—', label: "Artisans", icon: Users, desc: 'créateurs passionnés' },
+                { value: "98%", label: "Satisfaction", icon: Star, desc: 'clients enchantés' },
+                { value: cats.length > 0 ? String(cats.length) : '—', label: "Catégories", icon: Palette, desc: 'univers créatifs' },
               ].map((stat, index) => (
                 <div key={index} className="text-center group">
                   <div className="inline-flex items-center justify-center w-12 h-12 border-2 border-sage-200 dark:border-sage-700 rounded-full bg-white dark:bg-stone-900 mb-3 group-hover:border-sage-400 dark:group-hover:border-sage-500 transition-colors">
@@ -226,19 +221,24 @@ export default function HomePage() {
           </div>
 
           {/* Catégories - grille créative */}
-          {cats.length > 0 && (
-            <div>
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-3 border-2 border-sage-200 dark:border-sage-700 px-4 py-2 bg-sage-50/30 dark:bg-stone-900/30">
-                  <LucideIcons.Grid size={14} className="text-sage-500 dark:text-sage-400" />
-                  <span className="text-xs uppercase tracking-wider text-sage-700 dark:text-sage-400">explorer par univers</span>
-                </div>
-                <h2 className="text-2xl font-light text-stone-800 dark:text-stone-200 mt-4">Catégories</h2>
-                <p className="text-sm text-stone-500 dark:text-stone-400 mt-2 max-w-md mx-auto">
-                  Découvrez nos univers artisanaux
-                </p>
+          <div>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-3 border-2 border-sage-200 dark:border-sage-700 px-4 py-2 bg-sage-50/30 dark:bg-stone-900/30">
+                <Grid3x3 size={14} className="text-sage-500 dark:text-sage-400" />
+                <span className="text-xs uppercase tracking-wider text-sage-700 dark:text-sage-400">explorer par univers</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <h2 className="text-2xl font-light text-stone-800 dark:text-stone-200 mt-4">Catégories</h2>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-2 max-w-md mx-auto">
+                Découvrez nos univers artisanaux
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading ? (
+                [...Array(6)].map((_, i) => (
+                  <div key={i} className="border-2 border-sage-200 dark:border-sage-800 p-6 animate-pulse h-24 bg-sage-50/50 dark:bg-stone-900/50" />
+                ))
+              ) : cats.length === 0 ? null : (
+                <>
                 {cats.slice(0, 6).map((cat, index) => {
                   const IconComponent = getLucideIcon(cat.icon);
                   return (
@@ -278,22 +278,23 @@ export default function HomePage() {
                 {cats.length > 6 && (
                   <div className="flex items-center justify-center border-2 border-dashed border-sage-200 dark:border-sage-800 p-6 hover:border-sage-300 dark:hover:border-sage-600 transition-colors">
                     <Link href="/categories" className="text-center group">
-                      <LucideIcons.Compass size={32} className="text-sage-400 dark:text-sage-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                      <Compass size={32} className="text-sage-400 dark:text-sage-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                       <p className="text-[10px] text-sage-500 dark:text-sage-400 uppercase tracking-wider">
                         + {cats.length - 6} autres univers
                       </p>
                     </Link>
                   </div>
                 )}
-              </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Dernières créations */}
           <div>
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-3 border-2 border-sage-200 dark:border-sage-700 px-4 py-2 bg-sage-50/30 dark:bg-stone-900/30">
-                <LucideIcons.Sparkles size={14} strokeWidth={1.5} className="text-sage-500 dark:text-sage-400" />
+                <Sparkles size={14} strokeWidth={1.5} className="text-sage-500 dark:text-sage-400" />
                 <span className="text-xs uppercase tracking-wider text-sage-700 dark:text-sage-400">fraîchement sorties</span>
               </div>
               <h2 className="text-2xl font-light text-stone-800 dark:text-stone-200 mt-4">Dernières créations</h2>
@@ -363,7 +364,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2">
               <div className="p-8 bg-linear-to-br from-sage-50/30 to-white dark:from-stone-900/30 dark:to-stone-950">
                 <div className="flex items-center gap-2 mb-4">
-                  <LucideIcons.Rocket size={18} className="text-sage-500 dark:text-sage-400" strokeWidth={1.5} />
+                  <Rocket size={18} className="text-sage-500 dark:text-sage-400" strokeWidth={1.5} />
                   <h2 className="text-sm uppercase tracking-[0.2em] text-sage-700 dark:text-sage-400">&gt; Appel aux artisans</h2>
                 </div>
                 <h3 className="text-xl font-light text-stone-800 dark:text-stone-200 mb-3">
@@ -389,7 +390,7 @@ export default function HomePage() {
               <div className="border-l-2 border-sage-200 dark:border-sage-800 bg-linear-to-br from-amber-50 to-sage-50 dark:from-sage-950 dark:to-sage-800 p-8 flex items-center justify-center">
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border-2 border-sage-200 dark:border-sage-700 bg-white dark:bg-stone-900 mb-4">
-                    <LucideIcons.Award size={32} className="text-sage-500 dark:text-sage-400" strokeWidth={1.5} />
+                    <Award size={32} className="text-sage-500 dark:text-sage-400" strokeWidth={1.5} />
                   </div>
                   <p className="text-[11px] text-sage-600 dark:text-sage-400 italic">
                     &quot;Rejoindre Craftea, c&apos;est donner une vitrine authentique à son savoir-faire&quot;

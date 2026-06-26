@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Product } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 
@@ -19,10 +20,12 @@ export function ProductCard({ product, onToggleFavorite, isFavorite }: ProductCa
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative mb-4 aspect-square border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800">
           {imageUrl ? (
-            <img
+            <Image
               src={assetUrl(imageUrl, "product-images")}
               alt={product.title || "Produit"}
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-stone-400 dark:text-stone-500">

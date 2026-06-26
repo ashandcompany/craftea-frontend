@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, DM_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -8,9 +8,15 @@ import { Footer } from "@/components/footer";
 import { cookies } from "next/headers";
 import type { User } from "@/lib/api";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -49,7 +55,7 @@ export default async function RootLayout({
   const initialUser = await getInitialUser();
 
   return (
-    <html lang="fr" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="fr" className={`${inter.variable} ${dmSans.variable} scroll-smooth`} suppressHydrationWarning>
       <Script
         src="https://craftea.ddnsfree.com:3009/script.js"
         data-website-id={
@@ -61,7 +67,7 @@ export default async function RootLayout({
       />
       <body
         suppressHydrationWarning
-        className={`${inter.variable} min-h-screen bg-white font-sans text-stone-800 antialiased transition-colors dark:bg-stone-950 dark:text-stone-200`}
+        className="min-h-screen bg-white font-sans text-stone-800 antialiased transition-colors dark:bg-stone-950 dark:text-stone-200"
       >
         <Providers initialUser={initialUser}>
           <Navbar />
