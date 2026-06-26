@@ -46,7 +46,31 @@ export default function HomePage() {
   const [retryDelayMs, setRetryDelayMs] = useState(0);
   const [, setForceUpdate] = useState(0);
 
+  // Effet machine à écrire
+  const [displayText, setDisplayText] = useState("");
+  const [showCursor, setShowCursor] = useState(true);
   const fullText = "L'artisanat authentique";
+
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i <= fullText.length) {
+        setDisplayText(fullText.slice(0, i));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 100);
+
+    const cursorTimer = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 500);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(cursorTimer);
+    };
+  }, []);
 
   // Force re-render tous les 100ms pour mettre à jour le countdown
   useEffect(() => {
@@ -123,13 +147,8 @@ export default function HomePage() {
               <div className="space-y-3">
                 <h1 className="text-4xl md:text-5xl font-light tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
                   <span className="relative">
-                    <span
-                      className="inline-block overflow-hidden"
-                      style={{ animation: 'typing 2.3s steps(23, end) both' }}
-                    >
-                      {fullText}
-                    </span>
-                    <span className="absolute -right-5 text-sage-600 dark:text-sage-400">_</span>
+                    {displayText}
+                    <span className={`absolute -right-8 ${showCursor ? 'opacity-100' : 'opacity-0'} text-sage-600 dark:text-sage-400`}>_</span>
                   </span>
                   <span className="block text-sage-600 dark:text-sage-400">fait main & unique</span>
                 </h1>

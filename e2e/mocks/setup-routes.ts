@@ -244,24 +244,10 @@ export async function setupMockRoutes(page: Page): Promise<void> {
     return ok(route, mockDb.listShopsByArtist(artistId));
   });
 
-  // POST /api/shops/
-  await page.route(`${API_ORIGIN}/api/shops/`, async (route) => {
-    if (route.request().method() !== 'POST') return route.continue();
-    const user = currentUser(route);
-    if (!user) return unauthorized(route);
-    // Ensure the artist has a profile (create empty one if missing)
-    mockDb.upsertArtistProfile(user.id, {});
-    const bodyRawData = route.request().postData();
-    const bodyRaw = typeof bodyRawData === 'string' ? bodyRawData : (bodyRawData?.toString() ?? '');
-    const name = formField(bodyRaw, 'name') ?? 'Boutique';
-    const description = formField(bodyRaw, 'description') ?? '';
-    const location = formField(bodyRaw, 'location') ?? '';
-    const shop = mockDb.createShop({ artist_id: user.id, name, description, location });
-    return json(route, 201, shop);
-  });
-
-  // GET /api/shops/:id
+  // GET /api/shops/:id — only handles GET requests; registered before POST handler so LIFO
+  // ensures POST /api/shops/ is intercepted by the dedicated handler below without chaining.
   await page.route(`${API_ORIGIN}/api/shops/*`, (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
     const url = route.request().url();
     // Ignore shipping sub-routes (handled separately below if needed)
     if (/\/shipping|\/shipping-methods/.test(url)) return route.continue();
@@ -283,35 +269,27 @@ export async function setupMockRoutes(page: Page): Promise<void> {
     return ok(route, []);
   });
 
-  // ── Products ─────────────────────────────────────────────────────────────
-
-  // POST /api/products/
-  await page.route(`${API_ORIGIN}/api/products/`, async (route) => {
+  // POST /api/shops/ — registered LAST so Playwright's LIFO routing checks it FIRST,
+  // preventing the GET wildcard above from intercepting the shop creation request.
+  await page.route(`${API_ORIGIN}/api/shops/`, async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
     const user = currentUser(route);
     if (!user) return unauthorized(route);
+    // Ensure the artist has a profile (create empty one if missing)
+    mockDb.upsertArtistProfile(user.id, {});
     const bodyRawData = route.request().postData();
     const bodyRaw = typeof bodyRawData === 'string' ? bodyRawData : (bodyRawData?.toString() ?? '');
-    const title = formField(bodyRaw, 'title') ?? 'Produit Mock';
-    const price = parseFloat(formField(bodyRaw, 'price') ?? '0') || 0;
-    const stock = parseInt(formField(bodyRaw, 'stock') ?? '1', 10) || 1;
-    const shopIdStr = formField(bodyRaw, 'shop_id');
-    // Use the artist's first shop if shop_id is not parseable from form
-    const shops = mockDb.listShopsByArtist(user.id);
-    const shopId = shopIdStr ? parseInt(shopIdStr, 10) : (shops[0]?.id ?? 0);
-    const product = mockDb.createProduct({
-      shop_id: shopId,
-      artist_id: user.id,
-      title,
-      description: formField(bodyRaw, 'description') ?? '',
-      price,
-      stock,
-      is_active: true,
-    });
-    return json(route, 201, { ...product, images: [] });
+    const name = formField(bodyRaw, 'name') ?? 'Boutique';
+    const description = formField(bodyRaw, 'description') ?? '';
+    const location = formField(bodyRaw, 'location') ?? '';
+    const shop = mockDb.createShop({ artist_id: user.id, name, description, location });
+    return json(route, 201, shop);
   });
 
-  // GET /api/products/ (list)
+  // ── Products ─────────────────────────────────────────────────────────────
+
+  // GET /api/products/ (list + single) — registered before POST handler so LIFO
+  // ensures POST /api/products/ is handled by the dedicated handler below.
   await page.route(`${API_ORIGIN}/api/products/*`, (route) => {
     if (route.request().method() !== 'GET') return route.continue();
     const url = new URL(route.request().url());
@@ -344,6 +322,32 @@ export async function setupMockRoutes(page: Page): Promise<void> {
     const includeInactive = url.searchParams.get('include_inactive') === 'true';
     const list = mockDb.listProducts({ search, include_inactive: includeInactive });
     return ok(route, { total: list.length, page: 1, limit: 20, data: list.map((p) => ({ ...p, images: [] })) });
+  });
+
+  // POST /api/products/ — registered LAST so Playwright's LIFO routing checks it FIRST.
+  await page.route(`${API_ORIGIN}/api/products/`, async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const user = currentUser(route);
+    if (!user) return unauthorized(route);
+    const bodyRawData = route.request().postData();
+    const bodyRaw = typeof bodyRawData === 'string' ? bodyRawData : (bodyRawData?.toString() ?? '');
+    const title = formField(bodyRaw, 'title') ?? 'Produit Mock';
+    const price = parseFloat(formField(bodyRaw, 'price') ?? '0') || 0;
+    const stock = parseInt(formField(bodyRaw, 'stock') ?? '1', 10) || 1;
+    const shopIdStr = formField(bodyRaw, 'shop_id');
+    // Use the artist's first shop if shop_id is not parseable from form
+    const shops = mockDb.listShopsByArtist(user.id);
+    const shopId = shopIdStr ? parseInt(shopIdStr, 10) : (shops[0]?.id ?? 0);
+    const product = mockDb.createProduct({
+      shop_id: shopId,
+      artist_id: user.id,
+      title,
+      description: formField(bodyRaw, 'description') ?? '',
+      price,
+      stock,
+      is_active: true,
+    });
+    return json(route, 201, { ...product, images: [] });
   });
 
   // ── Categories & Tags ────────────────────────────────────────────────────
