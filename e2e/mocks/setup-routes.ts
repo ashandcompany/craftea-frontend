@@ -477,6 +477,10 @@ export async function setupMockRoutes(page: Page): Promise<void> {
   });
 
   await page.route(`${API_ORIGIN}/api/reviews/**`, (route) => {
-    return ok(route, []);
+    const url = route.request().url();
+    if (/\/average/.test(url)) {
+      return ok(route, { product_id: 0, average: 0, count: 0 });
+    }
+    return ok(route, { data: [], total: 0 });
   });
 }
