@@ -3,6 +3,8 @@
  * Replaces real backend calls so tests run without a running backend.
  */
 
+import { SignJWT } from 'jose';
+
 export type Role = 'buyer' | 'artist' | 'admin';
 
 export interface MockUser {
@@ -117,21 +119,35 @@ class MockDatabase {
   }
 
   getUserFromToken(token: string): MockUser | undefined {
-    const match = token.match(/^mock-access-(\d+)$/);
-    if (!match) return undefined;
-    return this.findUserById(parseInt(match[1], 10));
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      try {
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+        if (typeof payload.id === 'number') return this.findUserById(payload.id);
+      } catch {
+        // fall through
+      }
+    }
+    return undefined;
   }
 
-  authenticate(email: string, password: string): { accessToken: string; refreshToken: string; user: MockUser } {
+  async authenticate(email: string, password: string): Promise<{ accessToken: string; refreshToken: string; user: MockUser }> {
     const user = this.findUserByEmail(email);
     if (!user || user.password !== password) {
       throw new Error(`Mock auth failed for ${email}`);
     }
-    return {
-      accessToken: `mock-access-${user.id}`,
-      refreshToken: `mock-refresh-${user.id}`,
-      user,
-    };
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET ?? 'ci-test-jwt-secret-32chars-min!!'
+    );
+    const accessToken = await new SignJWT({ id: user.id, role: user.role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1h')
+      .sign(secret);
+    const refreshToken = await new SignJWT({ id: user.id })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(secret);
+    return { accessToken, refreshToken, user };
   }
 
   // ── Artist Profiles ──────────────────────────────────────────────────────

@@ -58,7 +58,7 @@ const ensureBuyerAccount = () => {
 };
 
 /** Return mock tokens without any network call. */
-const authenticate = (email: string, password: string) => {
+const authenticate = async (email: string, password: string) => {
   return mockDb.authenticate(email, password);
 };
 
@@ -77,7 +77,7 @@ const loginAs = async (
   } catch {
     // Ignore storage access errors
   }
-  const { accessToken, refreshToken } = authenticate(email, password);
+  const { accessToken, refreshToken } = await authenticate(email, password);
   await page.context().addCookies([
     {
       name: 'accessToken',
@@ -103,9 +103,9 @@ const findProductByTitle = (title: string) => {
   return product;
 };
 
-const getBuyerAccessToken = () => {
+const getBuyerAccessToken = async () => {
   ensureBuyerAccount();
-  return authenticate(BUYER_EMAIL, BUYER_PASSWORD).accessToken;
+  return (await authenticate(BUYER_EMAIL, BUYER_PASSWORD)).accessToken;
 };
 
 const createOrderForProduct = (
@@ -166,7 +166,7 @@ test.describe('Circuit complet Craftea', () => {
   test('2. Créer un compte artisan (artist)', async () => {
     // L'UI d'inscription crée un buyer; on force ici un vrai compte artist pour la suite du circuit.
     ensureArtistAccount();
-    const { user } = authenticate(ARTIST_EMAIL, ARTIST_PASSWORD);
+    const { user } = await authenticate(ARTIST_EMAIL, ARTIST_PASSWORD);
     expect(user.role).toBe('artist');
   });
 
@@ -409,7 +409,7 @@ test.describe('Circuit complet Craftea', () => {
   test('11. Ajouter le produit au panier', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
     const product = findProductByTitle(PRODUCT_TITLE);
     const buyerUser = mockDb.getUserFromToken(accessToken)!;
 
@@ -435,7 +435,7 @@ test.describe('Circuit complet Craftea', () => {
   test('12. Aller au panier', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
     const product = findProductByTitle(PRODUCT_TITLE);
     const buyerUser = mockDb.getUserFromToken(accessToken)!;
 
@@ -455,7 +455,7 @@ test.describe('Circuit complet Craftea', () => {
   test('13. Procéder au checkout', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
     const product = findProductByTitle(PRODUCT_TITLE);
     if (Number(product.stock) <= 0) {
       expect(Number(product.stock)).toBe(0);
@@ -486,7 +486,7 @@ test.describe('Circuit complet Craftea', () => {
   test('14. Remplir les informations de livraison', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
 
     await page.goto('/checkout');
     await expect(page).toHaveURL(/\/(checkout|cart)/, { timeout: 10000 });
@@ -517,7 +517,7 @@ test.describe('Circuit complet Craftea', () => {
   test('15. Passer au paiement (Stripe)', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
 
     await page.goto('/checkout');
     await expect(page).toHaveURL(/\/(checkout|cart)/, { timeout: 10000 });
@@ -554,7 +554,7 @@ test.describe('Circuit complet Craftea', () => {
     await page.goto('/account');
     await expect(page).toHaveURL(/\/account/, { timeout: 10000 });
 
-    const { user } = authenticate(ARTIST_EMAIL, ARTIST_PASSWORD);
+    const { user } = await authenticate(ARTIST_EMAIL, ARTIST_PASSWORD);
     expect(user.role).toBe('artist');
   });
 
@@ -598,7 +598,7 @@ test.describe('Vérifications post-achat', () => {
   test('Vérifier la décrémentation du stock', async ({ page }) => {
     ensureBuyerAccount();
     await loginAs(page, BUYER_EMAIL, BUYER_PASSWORD);
-    const accessToken = getBuyerAccessToken();
+    const accessToken = await getBuyerAccessToken();
     const product = findProductByTitle(PRODUCT_TITLE);
     const beforeStock = Number(product.stock);
 

@@ -13,20 +13,36 @@ import { mockDb } from './mock-db';
 
 const API_ORIGIN = 'http://localhost:3001';
 
-/** Parse `accessToken=mock-access-{id}` from the Cookie header. */
-function userFromCookies(route: Route) {
-  const cookieHeader = route.request().headers()['cookie'] ?? '';
-  const match = cookieHeader.match(/accessToken=mock-access-(\d+)/);
-  if (!match) return undefined;
-  return mockDb.findUserById(parseInt(match[1], 10));
+/** Decode user ID from a token (JWT payload decode, no verification needed in mocks). */
+function decodeTokenUserId(token: string): number | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+    return typeof payload.id === 'number' ? payload.id : null;
+  } catch {
+    return null;
+  }
 }
 
-/** Parse `Authorization: Bearer mock-access-{id}` header. */
+/** Parse `accessToken=<jwt>` from the Cookie header. */
+function userFromCookies(route: Route) {
+  const cookieHeader = route.request().headers()['cookie'] ?? '';
+  const match = cookieHeader.match(/accessToken=([^;]+)/);
+  if (!match) return undefined;
+  const userId = decodeTokenUserId(match[1]);
+  if (userId === null) return undefined;
+  return mockDb.findUserById(userId);
+}
+
+/** Parse `Authorization: Bearer <jwt>` header. */
 function userFromBearer(route: Route) {
   const auth = route.request().headers()['authorization'] ?? '';
-  const match = auth.match(/^Bearer mock-access-(\d+)$/);
+  const match = auth.match(/^Bearer (.+)$/);
   if (!match) return undefined;
-  return mockDb.findUserById(parseInt(match[1], 10));
+  const userId = decodeTokenUserId(match[1]);
+  if (userId === null) return undefined;
+  return mockDb.findUserById(userId);
 }
 
 function currentUser(route: Route) {
@@ -92,7 +108,7 @@ export async function setupMockRoutes(page: Page): Promise<void> {
       lastname: data.lastname ?? '',
       role: data.role ?? 'buyer',
     });
-    const accessToken = `mock-access-${user.id}`;
+    const { accessToken, refreshToken } = await mockDb.authenticate(user.email, user.password);
     await page.context().addCookies([
       {
         name: 'accessToken',
@@ -102,7 +118,7 @@ export async function setupMockRoutes(page: Page): Promise<void> {
       },
       {
         name: 'refreshToken',
-        value: `mock-refresh-${user.id}`,
+        value: refreshToken,
         url: 'http://localhost:3000',
         sameSite: 'Lax',
       },
@@ -119,7 +135,7 @@ export async function setupMockRoutes(page: Page): Promise<void> {
     const postData = route.request().postData() || '{}';
     const data = typeof postData === 'string' ? JSON.parse(postData) : JSON.parse(postData.toString());
     try {
-      const { user, accessToken, refreshToken } = mockDb.authenticate(data.email ?? '', data.password ?? '');
+      const { user, accessToken, refreshToken } = await mockDb.authenticate(data.email ?? '', data.password ?? '');
       await page.context().addCookies([
         {
           name: 'accessToken',
