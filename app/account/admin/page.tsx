@@ -19,10 +19,11 @@ import {
   type ArtistRequest,
   OrderStatus,
 } from "@/lib/api";
+import { COMMISSION } from "@/lib/utils";
 import {
   Users, Palette, ShoppingBag, FolderOpen, Tag as TagIcon,
   ArrowRight, Hourglass, Shield, AlertTriangle,
-  Clock, Wallet, MessageSquare,
+  Clock, Wallet, MessageSquare, TrendingUp,
 } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 
@@ -58,11 +59,47 @@ export default function AdminDashboard() {
     return null;
   }
 
+  // ── Derived operational counters ──────────────────────────────────────────
   const pendingArtists = artistsList.filter((a) => !a.validated).length;
   const pendingOrders = ordersList.filter((o) => o.status === OrderStatus.PENDING).length;
   const inactiveUsers = usersList.filter((u) => !u.is_active).length;
   const pendingRequests = artistRequestsList.filter((r) => r.status === "pending" || r.status === "info_requested").length;
 
+  // ── KPI computations ──────────────────────────────────────────────────────
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const activeOrders = ordersList.filter((o) => o.status !== OrderStatus.CANCELLED);
+  const monthOrders = activeOrders.filter((o) => new Date(o.created_at) >= monthStart);
+
+  const gmvMonth = monthOrders.reduce((sum, o) => sum + Number(o.total), 0);
+  const commissionMonth = monthOrders.reduce(
+    (sum, o) => sum + Number(o.total) * COMMISSION.RATE + COMMISSION.FIXED_EUR,
+    0,
+  );
+  const panierMoyen =
+    activeOrders.length > 0
+      ? activeOrders.reduce((sum, o) => sum + Number(o.total), 0) / activeOrders.length
+      : 0;
+
+  const artistesVerifies = artistsList.filter((a) => a.validated).length;
+
+  const approvedRequests = artistRequestsList.filter((r) => r.status === "approved");
+  const avgDelayHours =
+    approvedRequests.length > 0
+      ? approvedRequests.reduce((sum, r) => {
+          return (
+            sum +
+            (new Date(r.updated_at).getTime() - new Date(r.created_at).getTime()) /
+              (1000 * 60 * 60)
+          );
+        }, 0) / approvedRequests.length
+      : null;
+
+  const formatDelay = (hours: number) =>
+    hours < 24 ? `${hours.toFixed(1)} h` : `${(hours / 24).toFixed(1)} j`;
+
+  // ── Stats grid ────────────────────────────────────────────────────────────
   const stats = [
     { label: "utilisateurs", value: usersList.length, icon: Users, href: "/account/admin/users", accent: inactiveUsers > 0 ? `${inactiveUsers} inactif${inactiveUsers > 1 ? "s" : ""}` : undefined },
     { label: "candidatures", value: artistRequestsList.length, icon: MessageSquare, href: "/account/admin/artist-requests", accent: pendingRequests > 0 ? `${pendingRequests} en attente` : undefined },
@@ -76,7 +113,7 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <AccountPageHeader icon={Shield} title="> Administration" description="— vue d’ensemble de la plateforme" />
+      <AccountPageHeader icon={Shield} title="> Administration" description="— vue d'ensemble de la plateforme" />
 
       {loading ? (
         <div className="py-16 text-center text-stone-400">
@@ -145,6 +182,66 @@ export default function AdminDashboard() {
                 )}
               </Link>
             ))}
+          </div>
+
+          {/* KPIs */}
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp size={14} className="text-stone-400" />
+              <h2 className="text-xs uppercase tracking-wider text-stone-400">indicateurs clés de performance</h2>
+            </div>
+
+            <div className="space-y-3">
+              {/* Métier */}
+              <div>
+                <p className="mb-1.5 px-1 text-[10px] text-stone-300 uppercase tracking-wider">— métier</p>
+                <div className="border border-stone-200 divide-y divide-stone-100">
+                  <KpiRow
+                    label="Artisans vérifiés actifs"
+                    value={String(artistesVerifies)}
+                    target="50 (mois 3)"
+                    progress={artistesVerifies / 50}
+                  />
+                  <KpiRow
+                    label={`GMV — ${now.toLocaleString("fr-FR", { month: "long" })}`}
+                    value={`${gmvMonth.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €`}
+                    target="10 000 € (mois 6)"
+                    progress={gmvMonth / 10000}
+                  />
+                  <KpiRow
+                    label="Commission générée (mois)"
+                    value={`${commissionMonth.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €`}
+                    target="500 € (mois 6)"
+                    progress={commissionMonth / 500}
+                  />
+                  <KpiRow
+                    label="Délai moyen vérification artisan"
+                    value={avgDelayHours !== null ? formatDelay(avgDelayHours) : "—"}
+                    target="< 48 h"
+                    progress={avgDelayHours !== null ? Math.min(1, 48 / Math.max(avgDelayHours, 0.1)) : null}
+                  />
+                </div>
+              </div>
+
+              {/* Produit */}
+              <div>
+                <p className="mb-1.5 px-1 text-[10px] text-stone-300 uppercase tracking-wider">— produit</p>
+                <div className="border border-stone-200 divide-y divide-stone-100">
+                  <KpiRow
+                    label="Panier moyen"
+                    value={activeOrders.length > 0 ? `${panierMoyen.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "—"}
+                    target="≥ 40 €"
+                    progress={activeOrders.length > 0 ? panierMoyen / 40 : null}
+                  />
+                  <KpiRow
+                    label="Note moyenne produits"
+                    value="N/D"
+                    target="≥ 4,2 / 5"
+                    progress={null}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Quick actions */}
@@ -265,6 +362,58 @@ export default function AdminDashboard() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function KpiRow({
+  label,
+  value,
+  target,
+  progress,
+}: {
+  label: string;
+  value: string;
+  target: string;
+  progress: number | null;
+}) {
+  const pct = progress !== null ? Math.min(1, Math.max(0, progress)) : null;
+  const status = pct === null ? "na" : pct >= 1 ? "ok" : pct >= 0.5 ? "warn" : "miss";
+
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className={`shrink-0 text-[11px] ${
+            status === "ok"
+              ? "text-green-500"
+              : status === "warn"
+                ? "text-amber-400"
+                : status === "miss"
+                  ? "text-red-400"
+                  : "text-stone-300"
+          }`}
+        >
+          {status === "ok" ? "✓" : status === "na" ? "—" : "○"}
+        </span>
+        <span className="text-xs text-stone-600 truncate">{label}</span>
+      </div>
+      <div className="flex items-center gap-4 shrink-0">
+        <span
+          className={`text-sm font-mono ${
+            status === "ok"
+              ? "text-green-700"
+              : status === "warn"
+                ? "text-amber-700"
+                : status === "na"
+                  ? "text-stone-400"
+                  : "text-stone-700"
+          }`}
+        >
+          {value}
+        </span>
+        <span className="w-28 text-right text-[10px] text-stone-300">{target}</span>
+      </div>
     </div>
   );
 }
