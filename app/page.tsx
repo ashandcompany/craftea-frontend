@@ -7,11 +7,14 @@ import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // Fonction pour obtenir un composant icône par son nom
-function getLucideIcon(iconName?: string) {
+function getLucideIcon(iconName?: string): LucideIcon | null {
   if (!iconName) return null;
-  return (LucideIcons as Record<string, unknown>)[iconName] || null;
+  const icon = (LucideIcons as Record<string, unknown>)[iconName];
+  if (typeof icon !== "function") return null;
+  return icon as LucideIcon;
 }
 
 function formatCount(n: number | null): string {

@@ -229,7 +229,11 @@ export default function AccountProductsPage() {
 
       const hasVariants = variantsPayload.length > 0;
 
-      const payload: Record<string, unknown> = {
+      type ProductPayload = Parameters<typeof productsApi.create>[0] & {
+        images_to_delete?: number[];
+        image_order?: number[];
+      };
+      const payload: ProductPayload = {
         shop_id: form.shop_id,
         category_id: form.category_id,
         title: form.title.trim(),
@@ -262,7 +266,7 @@ export default function AccountProductsPage() {
         if (remainingImages.length > 0) {
           payload.image_order = remainingImages.map((img) => img.id);
         }
-        const updated = await productsApi.update(editingProduct.id, payload);
+        const updated = await productsApi.update(editingProduct.id, payload as Parameters<typeof productsApi.update>[1]);
         setProductsList((prev) => prev.map((p) => (p.id === editingProduct.id ? updated : p)));
       } else {
         await productsApi.create(payload);
