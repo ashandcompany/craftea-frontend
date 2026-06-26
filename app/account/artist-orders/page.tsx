@@ -53,11 +53,6 @@ export default function ArtistOrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState<Record<number, OrderStatus>>({});
   const [productMap, setProductMap] = useState<Record<number, { title: string; imageUrl: string }>>({});
 
-  useEffect(() => {
-    if (!user || user.role !== "artist") return;
-    loadOrders();
-  }, [user]);
-
   const loadOrders = () => {
     setLoading(true);
     ordersApi.artistOrders()
@@ -76,6 +71,12 @@ export default function ArtistOrdersPage() {
       .catch(() => { })
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "artist") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadOrders();
+  }, [user]);
 
   if (!user || user.role !== "artist") {
     router.push("/account");

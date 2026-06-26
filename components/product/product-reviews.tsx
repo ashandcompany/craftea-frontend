@@ -51,8 +51,8 @@ export function ProductReviews({ productId, user, initialReviews, onAvgRatingCha
       setReviewImages([]);
       setShowReviewForm(false);
       await refreshAvg();
-    } catch (err: any) {
-      setReviewError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setReviewError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setReviewLoading(false);
     }
@@ -87,8 +87,8 @@ export function ProductReviews({ productId, user, initialReviews, onAvgRatingCha
       setEditingReviewId(null);
       setEditReviewImages([]);
       await refreshAvg();
-    } catch (err: any) {
-      setEditReviewError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setEditReviewError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setEditReviewLoading(false);
     }

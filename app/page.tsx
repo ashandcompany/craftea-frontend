@@ -11,7 +11,7 @@ import * as LucideIcons from "lucide-react";
 // Fonction pour obtenir un composant icône par son nom
 function getLucideIcon(iconName?: string) {
   if (!iconName) return null;
-  return (LucideIcons as any)[iconName] || null;
+  return (LucideIcons as Record<string, unknown>)[iconName] || null;
 }
 
 function formatCount(n: number | null): string {
@@ -93,7 +93,7 @@ export default function HomePage() {
         setRetrying(false);
         setRetryStartTime(null);
         setRetryDelayMs(0);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
         if (attempt < MAX_RETRIES) {
           const delayMs = BASE_DELAY * Math.pow(2, attempt);
@@ -105,7 +105,7 @@ export default function HomePage() {
           await new Promise((r) => setTimeout(r, delayMs));
           if (!cancelled) load(attempt + 1);
         } else {
-          setError(err.message || "Impossible de charger les données");
+          setError(err instanceof Error ? err.message : "Impossible de charger les données");
           setRetrying(false);
           setRetryStartTime(null);
           setRetryDelayMs(0);
@@ -128,7 +128,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <LucideIcons.Sparkles size={28} className="text-sage-500 dark:text-sage-400" strokeWidth={0.75} />
-                <span className="text-xs text-sage-500 dark:text-sage-400 uppercase tracking-wider">// marketplace artisanale</span>
+                <span className="text-xs text-sage-500 dark:text-sage-400 uppercase tracking-wider">{"// marketplace artisanale"}</span>
               </div>
               <div className="space-y-3">
                 <h1 className="text-4xl md:text-5xl font-light tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
@@ -200,7 +200,7 @@ export default function HomePage() {
           <div className="relative bg-linear-to-r from-sage-50/50 to-white dark:from-stone-900/50 dark:to-stone-950 border-2 border-sage-200 dark:border-sage-800 p-8">
             <div className="absolute top-2 right-3 text-[10px] text-sage-300 dark:text-sage-700">⏎</div>
             <div className="text-center mb-8">
-              <span className="text-xs text-sage-500 dark:text-sage-400 uppercase tracking-wider">// en chiffres</span>
+              <span className="text-xs text-sage-500 dark:text-sage-400 uppercase tracking-wider">{"// en chiffres"}</span>
               <h2 className="text-xl font-light text-stone-800 dark:text-stone-200 mt-2">Quelques repères</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -373,7 +373,7 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link href="/register">
                     <Button className="rounded-none border-2 border-sage-700 dark:border-sage-600 bg-sage-700 dark:bg-sage-600 px-6 py-2 text-sm text-white hover:bg-sage-800 dark:hover:bg-sage-700 transition-all hover:scale-105">
-                      démarrer l'aventure →
+                      démarrer l&apos;aventure →
                     </Button>
                   </Link>
                   <Link href="/about">
@@ -389,7 +389,7 @@ export default function HomePage() {
                     <LucideIcons.Award size={32} className="text-sage-500 dark:text-sage-400" strokeWidth={1.5} />
                   </div>
                   <p className="text-[11px] text-sage-600 dark:text-sage-400 italic">
-                    "Rejoindre Craftea, c'est donner une vitrine authentique à son savoir-faire"
+                    &quot;Rejoindre Craftea, c&apos;est donner une vitrine authentique à son savoir-faire&quot;
                   </p>
                   <div className="mt-3 flex items-center justify-center gap-1 text-[9px] text-sage-400 dark:text-sage-600">
                     <span className="w-4 h-px bg-sage-200 dark:bg-sage-800" />
@@ -405,9 +405,9 @@ export default function HomePage() {
           <div className="text-center space-y-4 pt-8">
             <div className="flex items-center justify-center gap-2 text-[10px] text-sage-400 dark:text-sage-600">
               <span className="w-8 h-px bg-sage-200 dark:bg-sage-800" />
-              <span>///</span>
+              <span>{"///"}</span>
               <span className="text-stone-400 dark:text-stone-500">Fait avec ♥ par des passionnés pour des passionnés</span>
-              <span>///</span>
+              <span>{"///"}</span>
               <span className="w-8 h-px bg-sage-200 dark:bg-sage-800" />
             </div>
             <div className="flex items-center justify-center gap-2 text-[9px] text-stone-400 dark:text-stone-500">

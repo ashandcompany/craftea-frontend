@@ -373,7 +373,7 @@ export default function GiftsPage() {
                     const pages = [];
                     const maxVisible = 5;
                     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                    const endPage = Math.min(totalPages, startPage + maxVisible - 1);
                     
                     if (endPage - startPage + 1 < maxVisible) {
                       startPage = Math.max(1, endPage - maxVisible + 1);
@@ -444,9 +444,9 @@ export default function GiftsPage() {
             <div className="mt-8 text-center text-[9px] text-sage-400">
               <span className="flex items-center justify-center gap-2">
                 <span className="w-8 h-px bg-sage-200" />
-                <span>///</span>
+                <span>{"///"}</span>
                 <span>{filtered.length} idées cadeaux</span>
-                <span>///</span>
+                <span>{"///"}</span>
                 <span className="w-8 h-px bg-sage-200" />
               </span>
             </div>

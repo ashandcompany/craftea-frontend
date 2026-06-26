@@ -340,8 +340,8 @@ function CheckoutContent() {
             setOrderId(order.id);
             setPaymentIntentId(payment.stripe_payment_intent_id!);
             setClientSecret(payment.stripe_client_secret!);
-        } catch (err: any) {
-            setPaymentError(parseApiError(err.message || ""));
+        } catch (err: unknown) {
+            setPaymentError(parseApiError(err instanceof Error ? err.message : ""));
         } finally {
             setIntentLoading(false);
         }

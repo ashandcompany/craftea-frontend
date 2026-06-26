@@ -101,8 +101,8 @@ export function ProductInfo({
       setCartSuccess(true);
       setQty(1);
       setTimeout(() => setCartSuccess(false), 2000);
-    } catch (err: any) {
-      setAddError(err.message || "Erreur lors de l'ajout au panier");
+    } catch (err: unknown) {
+      setAddError(err instanceof Error ? err.message : "Erreur lors de l'ajout au panier");
     } finally {
       setAddingToCart(false);
     }

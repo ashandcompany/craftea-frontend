@@ -91,8 +91,8 @@ export default function PrivacySettingsPage() {
         try {
             await users.deactivateSelf();
             logout();
-        } catch (err: any) {
-            setDeleteError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setDeleteError(err instanceof Error ? err.message : "Erreur");
             setDeleting(false);
         }
     };

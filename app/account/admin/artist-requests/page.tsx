@@ -272,7 +272,7 @@ export default function AdminArtistRequestsPage() {
                         {messageSending ? <Loader size={12} className="animate-spin" /> : <Send size={12} />}
                       </button>
                     </div>
-                    <p className="text-[10px] text-stone-400">Envoyer un message changera le statut en "précisions demandées".</p>
+                    <p className="text-[10px] text-stone-400">Envoyer un message changera le statut en &quot;précisions demandées&quot;.</p>
                   </div>
                 )}
               </div>

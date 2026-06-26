@@ -23,8 +23,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Erreur de connexion");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur de connexion");
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function LoginPage() {
             href="/" 
             className="text-[10px] text-stone-400 hover:text-stone-600"
           >
-            ← retour à l'accueil
+            ← retour à l&apos;accueil
           </Link>
         </div>
       </div>

@@ -40,11 +40,6 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    loadOrders();
-  }, [user]);
-
   const loadOrders = () => {
     setLoading(true);
     ordersApi.list()
@@ -52,6 +47,12 @@ export default function AdminOrdersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadOrders();
+  }, [user]);
 
   if (!user || user.role !== "admin") {
     router.push("/account");

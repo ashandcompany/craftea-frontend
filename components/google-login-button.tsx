@@ -14,8 +14,8 @@ declare global {
     google?: {
       accounts: {
         id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
+          initialize: (config: Record<string, unknown>) => void;
+          renderButton: (element: HTMLElement, config: Record<string, unknown>) => void;
           prompt: () => void;
         };
       };
@@ -30,7 +30,7 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
   const [buttonReady, setButtonReady] = useState(false);
   const initialized = useRef(false);
 
-  const handleCredentialResponse = async (response: any) => {
+  const handleCredentialResponse = async (response: { credential?: string }) => {
     if (!response.credential) {
       onError?.('Erreur lors de la connexion avec Google');
       return;
@@ -39,8 +39,8 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
     try {
       await loginWithGoogle(response.credential);
       router.push('/');
-    } catch (err: any) {
-      onError?.(err.message || 'Erreur lors de la connexion avec Google');
+    } catch (err: unknown) {
+      onError?.(err instanceof Error ? err.message : 'Erreur lors de la connexion avec Google');
     } finally {
       setLoading(false);
     }

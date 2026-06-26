@@ -96,6 +96,7 @@ export function Navbar() {
     } catch { setFavoritesCount(0); }
   }, [user]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refreshFavoritesCount(); }, [refreshFavoritesCount]);
 
   useEffect(() => {
@@ -106,8 +107,11 @@ export function Navbar() {
 
   /* --- close everything on route change --------------------------- */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileOpen(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCategoriesOpen(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUserMenuOpen(false);
   }, [pathname]);
 

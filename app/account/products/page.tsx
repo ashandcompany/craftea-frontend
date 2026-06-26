@@ -229,7 +229,7 @@ export default function AccountProductsPage() {
 
       const hasVariants = variantsPayload.length > 0;
 
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         shop_id: form.shop_id,
         category_id: form.category_id,
         title: form.title.trim(),
@@ -270,8 +270,8 @@ export default function AccountProductsPage() {
         await loadProducts();
       }
       closeModal();
-    } catch (err: any) {
-      setFormError(err.message || "Erreur lors de la sauvegarde");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Erreur lors de la sauvegarde");
     } finally {
       setFormSaving(false);
     }
@@ -425,7 +425,7 @@ export default function AccountProductsPage() {
         </div>
         <div className="border border-stone-200 p-12 text-center">
           <p className="text-sm text-stone-600 mb-1">Profil artiste non configuré</p>
-          <p className="text-xs text-stone-400 mb-4">Créez d'abord votre profil artiste et une boutique</p>
+          <p className="text-xs text-stone-400 mb-4">Créez d&apos;abord votre profil artiste et une boutique</p>
           <Link
             href="/account/settings/shop"
             className="inline-block border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700"
@@ -446,7 +446,7 @@ export default function AccountProductsPage() {
         </div>
         <div className="border border-stone-200 p-12 text-center">
           <p className="text-sm text-stone-600 mb-1">Aucune boutique</p>
-          <p className="text-xs text-stone-400 mb-4">Créez une boutique avant d'ajouter des produits</p>
+          <p className="text-xs text-stone-400 mb-4">Créez une boutique avant d&apos;ajouter des produits</p>
           <Link
             href="/account/settings/shop"
             className="inline-block border border-stone-800 bg-stone-800 px-4 py-2 text-xs text-stone-50 hover:bg-stone-700"
@@ -523,7 +523,7 @@ export default function AccountProductsPage() {
         <div className="border border-stone-200 py-16 text-center">
           {searchQuery ? (
             <>
-              <p className="text-stone-400 text-sm">— aucun résultat pour "{searchQuery}" —</p>
+              <p className="text-stone-400 text-sm">— aucun résultat pour &quot;{searchQuery}&quot; —</p>
             </>
           ) : (
             <>
@@ -1243,7 +1243,7 @@ export default function AccountProductsPage() {
                   <div className="text-stone-400 hover:text-stone-600 transition-colors">
                     <div className="text-2xl mb-1"><Package className="h-8 w-8 mb-2 mx-auto" strokeWidth={1}/></div>
                     <p className="text-[11px]">cliquez ou glissez des images</p>
-                    <p className="text-[9px] text-stone-300 mt-1">PNG, JPG jusqu'à 5MB</p>
+                    <p className="text-[9px] text-stone-300 mt-1">PNG, JPG jusqu&apos;à 5MB</p>
                   </div>
                 </div>
 

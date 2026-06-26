@@ -66,10 +66,10 @@ export function PaymentForm({
 
       // Payment succeeded
       onSuccess(orderId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       onError({
         title: "Erreur de paiement",
-        detail: err.message || "Une erreur inattendue s'est produite.",
+        detail: err instanceof Error ? err.message : "Une erreur inattendue s'est produite.",
         retryable: true,
       });
       setProcessing(false);

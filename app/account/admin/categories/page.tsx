@@ -30,11 +30,6 @@ export default function AdminCategoriesPage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    loadCategories();
-  }, [user]);
-
   const loadCategories = () => {
     setLoading(true);
     categoriesApi.list()
@@ -42,6 +37,12 @@ export default function AdminCategoriesPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCategories();
+  }, [user]);
 
   if (!user || user.role !== "admin") {
     router.push("/account");

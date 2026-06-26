@@ -9,7 +9,7 @@ export default function TermsPage() {
           className="mb-8 inline-flex items-center gap-1 border-b border-sage-200 text-xs text-sage-600 transition-colors hover:border-sage-400 hover:text-sage-800"
         >
           <span className="text-sage-400">←</span>
-          <span className="uppercase tracking-wider">retour à l'accueil</span>
+          <span className="uppercase tracking-wider">retour à l&apos;accueil</span>
         </Link>
 
         <h1 className="mt-6 text-3xl font-light tracking-tight text-stone-900">
@@ -25,7 +25,7 @@ export default function TermsPage() {
               1. Objet
             </h2>
             <p>
-              Les présentes conditions générales régissent l'utilisation de la
+              Les présentes conditions générales régissent l&apos;utilisation de la
               plateforme Craftea, marketplace dédiée aux créateurs artisanaux.
               En accédant au site, vous acceptez sans réserve les présentes
               conditions.
@@ -37,7 +37,7 @@ export default function TermsPage() {
               2. Inscription et comptes
             </h2>
             <p>
-              L'inscription est gratuite et ouverte à toute personne physique
+              L&apos;inscription est gratuite et ouverte à toute personne physique
               majeure ou morale. Vous êtes responsable de la confidentialité de
               vos identifiants et de toutes les actions effectuées depuis votre
               compte.
@@ -49,9 +49,9 @@ export default function TermsPage() {
               3. Rôle de la plateforme
             </h2>
             <p>
-              Craftea agit en qualité d'intermédiaire entre acheteurs et
+              Craftea agit en qualité d&apos;intermédiaire entre acheteurs et
               vendeurs artisans. Les contrats de vente sont conclus directement
-              entre les parties. Craftea n'est pas vendeur des produits listés
+              entre les parties. Craftea n&apos;est pas vendeur des produits listés
               sur la plateforme.
             </p>
           </section>
@@ -82,7 +82,7 @@ export default function TermsPage() {
               Vos données sont traitées conformément au RGPD. Elles sont
               utilisées uniquement pour le fonctionnement de la plateforme et ne
               sont pas cédées à des tiers sans votre consentement. Vous disposez
-              d'un droit d'accès, de rectification et de suppression.
+              d&apos;un droit d&apos;accès, de rectification et de suppression.
             </p>
           </section>
 

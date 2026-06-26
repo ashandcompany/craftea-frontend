@@ -154,8 +154,8 @@ export default function ShopShippingPage() {
             }))
           );
         }
-      } catch (err: any) {
-        setError(err.message || "Erreur lors du chargement");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Erreur lors du chargement");
       } finally {
         setLoading(false);
       }
@@ -211,8 +211,8 @@ export default function ShopShippingPage() {
       await shopsApi.updateShipping(shopId, profiles);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la sauvegarde");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -233,7 +233,7 @@ export default function ShopShippingPage() {
     setMethodsSaved(false);
   };
 
-  const updateMethod = (index: number, field: string, value: any) => {
+  const updateMethod = (index: number, field: string, value: string | string[]) => {
     setMethods((prev) =>
       prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
     );
@@ -270,8 +270,8 @@ export default function ShopShippingPage() {
       await shopsApi.updateShippingMethods(shopId, payload);
       setMethodsSaved(true);
       setTimeout(() => setMethodsSaved(false), 2000);
-    } catch (err: any) {
-      setMethodsError(err.message || "Erreur lors de la sauvegarde");
+    } catch (err: unknown) {
+      setMethodsError(err instanceof Error ? err.message : "Erreur lors de la sauvegarde");
     } finally {
       setMethodsSaving(false);
     }

@@ -42,12 +42,6 @@ export default function AdminArtistsPage() {
   const [previewDoc, setPreviewDoc] = useState<string | null>(null);
   const [verifFilter, setVerifFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    loadArtists();
-    loadVerifications();
-  }, [user]);
-
   const loadArtists = () => {
     setLoading(true);
     artistsApi.adminListAll()
@@ -63,6 +57,14 @@ export default function AdminArtistsPage() {
       .catch(() => {})
       .finally(() => setVerifLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadArtists();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadVerifications();
+  }, [user]);
 
   if (!user || user.role !== "admin") {
     router.push("/account");

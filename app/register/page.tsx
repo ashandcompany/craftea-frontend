@@ -37,8 +37,8 @@ export default function RegisterPage() {
         password: form.password,
       });
       router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de l'inscription");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ export default function RegisterPage() {
             href="/"
             className="text-[10px] text-stone-400 hover:text-stone-600"
           >
-            ← retour à l'accueil
+            ← retour à l&apos;accueil
           </Link>
         </div>
       </div>

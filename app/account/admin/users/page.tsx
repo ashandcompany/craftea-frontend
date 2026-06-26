@@ -23,11 +23,6 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<"all" | "buyer" | "artist" | "admin">("all");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    loadUsers();
-  }, [user]);
-
   const loadUsers = () => {
     setLoading(true);
     usersApi.list()
@@ -35,6 +30,12 @@ export default function AdminUsersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadUsers();
+  }, [user]);
 
   if (!user || user.role !== "admin") {
     router.push("/account");

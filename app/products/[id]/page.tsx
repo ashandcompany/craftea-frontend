@@ -62,8 +62,8 @@ export default function ProductDetailPage() {
         }
         const fc = await favorites.count(Number(id)).catch(() => null);
         if (fc) setFavCount(fc.count);
-      } catch (err: any) {
-        setError(err.message || "Produit introuvable");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Produit introuvable");
       } finally {
         setLoading(false);
       }

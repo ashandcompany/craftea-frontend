@@ -179,7 +179,7 @@ export default function OrderDetailPage() {
           <Package size={32} className="mx-auto mb-4 text-sage-300" strokeWidth={1.5} />
           <p className="text-sm font-mono text-stone-500">[ commande introuvable ]</p>
           <p className="text-[10px] font-mono text-stone-400 mt-2">
-            cette commande n'existe pas ou ne vous appartient pas
+            cette commande n&apos;existe pas ou ne vous appartient pas
           </p>
         </div>
       )}

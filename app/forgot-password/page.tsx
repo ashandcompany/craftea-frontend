@@ -18,8 +18,8 @@ export default function ForgotPasswordPage() {
     try {
       await auth.forgotPassword(email);
       setSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || "Une erreur est survenue");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue");
     } finally {
       setLoading(false);
     }
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
               <strong>{email}</strong>
             </p>
             <p className="text-xs text-stone-500">
-              Le lien est valable <strong>1 heure</strong>. Vérifiez votre dossier spam si vous ne recevez pas l'email.
+              Le lien est valable <strong>1 heure</strong>. Vérifiez votre dossier spam si vous ne recevez pas l&apos;email.
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
 
           <div>
             <p className="text-xs text-stone-500 mb-4">
-              Entrez l'adresse email associée à votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.
+              Entrez l&apos;adresse email associée à votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.
             </p>
           </div>
 

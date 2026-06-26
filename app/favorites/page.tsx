@@ -39,8 +39,8 @@ export default function FavoritesPage() {
             .filter((r): r is PromiseFulfilledResult<Product> => r.status === "fulfilled")
             .map((r) => r.value)
         );
-      } catch (err: any) {
-        setError(err.message || "Erreur");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Erreur");
       } finally {
         setLoading(false);
       }

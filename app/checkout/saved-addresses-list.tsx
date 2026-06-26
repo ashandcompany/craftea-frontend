@@ -135,7 +135,7 @@ export function SavedAddressesList({
                     )}
 
                     {/* Séparateur machine à écrire */}
-                    <span className="text-sage-300 text-[10px]">///</span>
+                    <span className="text-sage-300 text-[10px]">{"///"}</span>
                   </div>
 
                   <div className="space-y-1">

@@ -36,7 +36,8 @@ export default function ArtistsPage() {
   // Chargement des produits pour chaque artiste
   useEffect(() => {
     if (artists.length === 0) return;
-    
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingProducts(true);
     const productPromises = artists.map(async (artist) => {
       if (!artist.shops?.length) return { artistId: artist.id, products: [] };
@@ -89,7 +90,9 @@ export default function ArtistsPage() {
       });
     }
     
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilteredArtists(filtered);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [artists, searchQuery, showValidatedOnly]);
 
@@ -156,7 +159,7 @@ export default function ArtistsPage() {
                 )}
                 {searchQuery && (
                   <span className="border border-stone-300 bg-white px-2 py-0.5 dark:border-stone-600 dark:bg-stone-800">
-                    "{searchQuery}"
+                    &quot;{searchQuery}&quot;
                   </span>
                 )}
                 <button

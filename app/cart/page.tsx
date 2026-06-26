@@ -561,8 +561,8 @@ export default function CartPage() {
     try {
       await updateItem(itemId, newQty);
       showNotification("Quantité mise à jour");
-    } catch (err: any) {
-      setError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setActionLoading(null);
     }
@@ -573,8 +573,8 @@ export default function CartPage() {
     try {
       await removeItem(itemId);
       showNotification("Article supprimé du panier");
-    } catch (err: any) {
-      setError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setActionLoading(null);
     }
@@ -585,8 +585,8 @@ export default function CartPage() {
     try {
       await clear();
       showNotification("Panier vidé");
-    } catch (err: any) {
-      setError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setClearLoading(false);
     }

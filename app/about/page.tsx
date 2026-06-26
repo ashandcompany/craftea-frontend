@@ -58,18 +58,18 @@ export default function AboutPage() {
                        border-b border-sage-200 hover:border-sage-400 transition-colors mb-6 group"
           >
             <span className="text-sage-400 group-hover:-translate-x-0.5 transition-transform">←</span>
-            <span className="uppercase tracking-wider">retour à l'accueil</span>
+            <span className="uppercase tracking-wider">retour à l&apos;accueil</span>
           </Link>
           
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <Sparkles size={28} className="text-sage-500" strokeWidth={1.5} />
-                <span className="text-xs text-sage-500 uppercase tracking-wider">// since 2026</span>
+                <span className="text-xs text-sage-500 uppercase tracking-wider">{/* since 2026 */}</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-light tracking-tight text-stone-900 leading-tight">
                 Là où la créativité
-                <span className="block text-sage-600">rencontre l'artisanat</span>
+                <span className="block text-sage-600">rencontre l&apos;artisanat</span>
               </h1>
               <p className="text-stone-500 text-sm mt-4 leading-relaxed max-w-md">
                 Craftea est une marketplace dédiée aux créateurs indépendants.
@@ -122,11 +122,11 @@ export default function AboutPage() {
                 <Quote size={40} className="text-sage-300 absolute top-4 left-4" strokeWidth={1} />
                 <Quote size={40} className="text-sage-300 absolute bottom-4 right-4 rotate-180" strokeWidth={1} />
                 <p className="text-lg text-stone-700 italic font-light leading-relaxed mt-8">
-                  "Chaque objet raconte une histoire, celle de la personne qui l'a façonné avec ses mains, son temps et sa passion."
+                  &quot;Chaque objet raconte une histoire, celle de la personne qui l&apos;a façonné avec ses mains, son temps et sa passion.&quot;
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-sage-500">
                   <span className="w-8 h-px bg-sage-300" />
-                  <span>— L'esprit Craftea</span>
+                  <span>— L&apos;esprit Craftea</span>
                 </div>
               </div>
             </div>
@@ -209,7 +209,7 @@ export default function AboutPage() {
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-stone-600 text-center leading-relaxed">
-                    Passionnée par l'artisanat et la créativité, j'ai créé Craftea pour offrir une vitrine authentique aux créateurs indépendants. Design, développement, stratégie, je porte le projet de bout en bout avec la conviction que chaque objet mérite l'attention qu'il réclame.
+                    Passionnée par l&apos;artisanat et la créativité, j&apos;ai créé Craftea pour offrir une vitrine authentique aux créateurs indépendants. Design, développement, stratégie, je porte le projet de bout en bout avec la conviction que chaque objet mérite l&apos;attention qu&apos;il réclame.
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2 text-[9px] text-sage-400">
                     <span className="w-6 h-px bg-sage-200" />
@@ -225,7 +225,7 @@ export default function AboutPage() {
           <div className="relative bg-linear-to-r from-sage-50/50 to-white border-2 border-sage-200 p-8">
             <div className="absolute top-2 right-3 text-[10px] text-sage-300">⏎</div>
             <div className="text-center mb-8">
-              <span className="text-xs text-sage-500 uppercase tracking-wider">// en chiffres</span>
+              <span className="text-xs text-sage-500 uppercase tracking-wider">{/* en chiffres */}</span>
               <h2 className="text-xl font-light text-stone-800 mt-2">Quelques repères</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -321,9 +321,9 @@ export default function AboutPage() {
           <div className="text-center space-y-4 pt-8">
             <div className="flex items-center justify-center gap-2 text-[10px] text-sage-400">
               <span className="w-8 h-px bg-sage-200" />
-              <span>///</span>
+              <span>{"///"}</span>
               <span className="text-stone-400">Fait avec ♥ par des passionnés pour des passionnés</span>
-              <span>///</span>
+              <span>{"///"}</span>
               <span className="w-8 h-px bg-sage-200" />
             </div>
             <div className="flex items-center justify-center gap-2 text-[9px] text-stone-400">

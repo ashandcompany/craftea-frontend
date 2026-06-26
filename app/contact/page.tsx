@@ -10,7 +10,7 @@ export default function ContactPage() {
           className="mb-8 inline-flex items-center gap-1 border-b border-sage-200 text-xs text-sage-600 transition-colors hover:border-sage-400 hover:text-sage-800"
         >
           <span className="text-sage-400">←</span>
-          <span className="uppercase tracking-wider">retour à l'accueil</span>
+          <span className="uppercase tracking-wider">retour à l&apos;accueil</span>
         </Link>
 
         <h1 className="mt-6 text-3xl font-light tracking-tight text-stone-900">

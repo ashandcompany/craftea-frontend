@@ -43,7 +43,7 @@ function ProductsPageContent() {
         return;
       }
 
-      const params: Record<string, any> = { page, limit: 12 };
+      const params: Record<string, string | number> = { page, limit: 12 };
       if (search) params.search = search;
       if (categoryId) params.category_id = Number(categoryId);
       if (selectedTag) params.tag = Number(selectedTag);
@@ -51,8 +51,8 @@ function ProductsPageContent() {
 
       cacheRef.current.set(cacheKey, res);
       setData(res);
-    } catch (err: any) {
-      setError(err.message || "Erreur");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setLoading(false);
     }

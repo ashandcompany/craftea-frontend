@@ -24,11 +24,6 @@ export default function AdminTagsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    loadTags();
-  }, [user]);
-
   const loadTags = () => {
     setLoading(true);
     tagsApi.list()
@@ -36,6 +31,12 @@ export default function AdminTagsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTags();
+  }, [user]);
 
   if (!user || user.role !== "admin") {
     router.push("/account");

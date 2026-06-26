@@ -49,8 +49,8 @@ export default function ArtistDetailPage() {
           setSelectedShop(null);
           setShopProducts([]);
         }
-      } catch (err: any) {
-        setError(err.message || "Artiste introuvable");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Artiste introuvable");
       } finally {
         setLoading(false);
       }
@@ -92,7 +92,7 @@ export default function ArtistDetailPage() {
       <div className="mx-auto max-w-5xl px-4 py-12 font-mono">
         <div className="py-20 text-center text-stone-400">
           <div className="inline-block h-6 w-6 animate-pulse"><Hourglass /></div>
-          <p className="mt-2 text-sm">chargement de l'artiste...</p>
+          <p className="mt-2 text-sm">chargement de l&apos;artiste...</p>
         </div>
       </div>
     );
@@ -202,7 +202,7 @@ export default function ArtistDetailPage() {
               ) : (
                 <MessageSquare size={12} />
               )}
-              Contacter l'artisan
+              Contacter l&apos;artisan
             </button>
           </div>
         )}
@@ -308,7 +308,7 @@ export default function ArtistDetailPage() {
       {/* If no shops/products */}
       {(!artist.shops || artist.shops.length === 0) && shopProducts.length === 0 && (
         <div className="mt-10 border border-stone-200 py-12 text-center">
-          <p className="text-stone-400 italic">— cet artisan n'a pas encore de boutique —</p>
+          <p className="text-stone-400 italic">— cet artisan n&apos;a pas encore de boutique —</p>
         </div>
       )}
     </div>

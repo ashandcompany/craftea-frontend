@@ -53,7 +53,7 @@ export default function NotFoundPage() {
               >
                 <span className="flex items-center gap-2">
                   <Home size={16} className="text-sage-400" strokeWidth={2} />
-                  <span className="text-sm text-stone-700">Retour à l'accueil</span>
+                  <span className="text-sm text-stone-700">Retour à l&apos;accueil</span>
                 </span>
                 <span className="text-[10px] text-sage-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   [ entrer ]

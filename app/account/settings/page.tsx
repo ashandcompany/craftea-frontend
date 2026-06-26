@@ -157,8 +157,8 @@ export default function SettingsProfilePage() {
             await users.update(user.id, profileForm);
             setEditingProfile(false);
             window.location.reload();
-        } catch (err: any) {
-            setProfileError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setProfileError(err instanceof Error ? err.message : "Erreur");
         } finally {
             setProfileSaving(false);
         }
@@ -205,8 +205,8 @@ export default function SettingsProfilePage() {
             setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
             setPasswordSuccess(true);
             setTimeout(() => setPasswordSuccess(false), 4000);
-        } catch (err: any) {
-            setPasswordError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setPasswordError(err instanceof Error ? err.message : "Erreur");
         } finally {
             setPasswordSaving(false);
         }
@@ -233,8 +233,8 @@ export default function SettingsProfilePage() {
             setEditingEmail(false);
             setEmailSuccess(true);
             setTimeout(() => { setEmailSuccess(false); window.location.reload(); }, 2000);
-        } catch (err: any) {
-            setEmailError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setEmailError(err instanceof Error ? err.message : "Erreur");
         } finally {
             setEmailSaving(false);
         }
@@ -253,8 +253,8 @@ export default function SettingsProfilePage() {
         try {
             await users.deactivateSelf();
             logout();
-        } catch (err: any) {
-            setCloseError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setCloseError(err instanceof Error ? err.message : "Erreur");
             setClosing(false);
         }
     };
@@ -290,8 +290,8 @@ export default function SettingsProfilePage() {
                 setAddressList((prev) => [...prev, created]);
             }
             setAddressModalOpen(false);
-        } catch (err: any) {
-            setAddressError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setAddressError(err instanceof Error ? err.message : "Erreur");
         }
     };
 
@@ -312,8 +312,8 @@ export default function SettingsProfilePage() {
             const created = await artistRequestsApi.submit(artistRequestText.trim());
             setArtistRequest(created);
             setArtistRequestText("");
-        } catch (err: any) {
-            setArtistRequestError(err.message || "Erreur");
+        } catch (err: unknown) {
+            setArtistRequestError(err instanceof Error ? err.message : "Erreur");
         } finally {
             setArtistRequestSubmitting(false);
         }
