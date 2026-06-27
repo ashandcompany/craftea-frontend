@@ -1,17 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchUserExport } from "./export-data";
+import type { User, Address, Order } from "./api";
+import { OrderStatus } from "./api";
 
 vi.mock("./api", () => ({
     auth: { me: vi.fn() },
     addresses: { list: vi.fn() },
     orders: { my: vi.fn() },
+    OrderStatus: { DELIVERED: "delivered" },
 }));
 
 import { auth, addresses, orders } from "./api";
 
-const mockProfile = { id: 1, firstname: "Alice", lastname: "Martin", email: "alice@example.com", role: "buyer" as const, is_active: true, created_at: "2025-01-01T00:00:00.000Z", updated_at: "2025-01-01T00:00:00.000Z" };
-const mockAddresses = [{ id: 1, user_id: 1, street: "12 rue des Arts", city: "Paris", postal_code: "75001", country: "FR" }];
-const mockOrders = [{ id: 10, user_id: 1, status: "delivered" as const, total: 4500, shipping_total: 0, items: [], created_at: "2025-06-01T00:00:00.000Z", updated_at: "2025-06-15T00:00:00.000Z" }];
+const mockProfile: User = { id: 1, firstname: "Alice", lastname: "Martin", email: "alice@example.com", role: "buyer", is_active: true, created_at: "2025-01-01T00:00:00.000Z", updated_at: "2025-01-01T00:00:00.000Z" };
+const mockAddresses: Address[] = [{ id: 1, user_id: 1, street: "12 rue des Arts", city: "Paris", postal_code: "75001", country: "FR" }];
+const mockOrders: Order[] = [{ id: 10, user_id: 1, status: OrderStatus.DELIVERED, total: 4500, shipping_total: 0, items: [], created_at: "2025-06-01T00:00:00.000Z", updated_at: "2025-06-15T00:00:00.000Z" }];
 
 describe("fetchUserExport", () => {
     beforeEach(() => {
