@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { users } from "@/lib/api";
+import { fetchUserExport } from "@/lib/export-data";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, Loader, Download, Trash2 } from "lucide-react";
 import { AccountPageHeader } from "@/components/account/page-header";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCookieConsent } from "react-cookie-manager";
 
 // --- Local storage helpers --------------------------------------------------
 
@@ -55,13 +57,35 @@ export default function PrivacySettingsPage() {
     const [findableByEmail, setFindableByEmail] = useLocalPref("craftea_findable_by_email", true);
 
     // ── Consentement cookies ──────────────────────────────────────────────
-    const [adPersonalization, setAdPersonalization] = useLocalPref("craftea_ad_personalization", true);
-    const [analytics, setAnalytics] = useLocalPref("craftea_analytics", true);
+    const { detailedConsent, updateDetailedConsent } = useCookieConsent();
+    const [analytics, setAnalytics] = useState<boolean>(
+        () => detailedConsent?.Analytics?.consented ?? true
+    );
     const [consentSaved, setConsentSaved] = useState(false);
 
     const saveConsent = () => {
+        updateDetailedConsent({ Analytics: analytics, Social: false, Advertising: false });
         setConsentSaved(true);
         setTimeout(() => setConsentSaved(false), 3000);
+    };
+
+    // ── Export données ────────────────────────────────────────────────────
+    const [exporting, setExporting] = useState(false);
+
+    const exportData = async () => {
+        setExporting(true);
+        try {
+            const payload = await fetchUserExport();
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `craftea-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            setExporting(false);
+        }
     };
 
     // ── Historique ────────────────────────────────────────────────────────
@@ -154,11 +178,12 @@ export default function PrivacySettingsPage() {
                     (informations de profil, adresses, commandes).
                 </p>
                 <button
-                    onClick={() => alert("Fonctionnalité à venir")}
-                    className="flex items-center gap-2 border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:border-stone-600 hover:text-stone-800"
+                    onClick={exportData}
+                    disabled={exporting}
+                    className="flex items-center gap-2 border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:border-stone-600 hover:text-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                    <Download size={13} />
-                    télécharger mes données
+                    {exporting ? <Loader size={13} className="animate-spin" /> : <Download size={13} />}
+                    {exporting ? "préparation…" : "télécharger mes données"}
                 </button>
             </Section>
 
@@ -223,23 +248,7 @@ export default function PrivacySettingsPage() {
                         </button>
                     </div>
 
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm text-stone-700">Personnalisation publicitaire</p>
-                            <p className="mt-0.5 text-xs text-stone-400">
-                                Désactivez pour refuser la « vente » ou le « partage » de vos données personnelles
-                            </p>
-                        </div>
-                        <button
-                            role="switch"
-                            aria-checked={adPersonalization}
-                            onClick={() => setAdPersonalization(!adPersonalization)}
-                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors ${adPersonalization ? "bg-stone-800" : "bg-stone-200"}`}
-                        >
-                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${adPersonalization ? "translate-x-4" : "translate-x-0.5"}`} />
-                        </button>
-                    </div>
-                </div>
+</div>
 
                 <div className="flex items-center gap-3">
                     <button
