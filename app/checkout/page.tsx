@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
@@ -38,9 +38,11 @@ import { SuccessScreen, ErrorScreen } from "./checkout-screens";
 
 // ── Stripe publishable key ────────────────────────────────────────────────────
 const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
-// advancedFraudSignals: false — Firefox ETP blocks r.stripe.com (fraud signals),
-// causing confirmCardPayment to hang waiting for a response that never comes.
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK, { advancedFraudSignals: false }) : null;
+// Firefox ETP blocks r.stripe.com (fraud signals), causing confirmCardPayment
+// to hang. In stripe-js v4+, advancedFraudSignals must be disabled via
+// setLoadParameters (imported from /pure) rather than as a loadStripe option.
+loadStripe.setLoadParameters({ advancedFraudSignals: false });
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = "form" | "processing" | "success" | "error";
