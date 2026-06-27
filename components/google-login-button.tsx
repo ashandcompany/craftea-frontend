@@ -23,12 +23,13 @@ declare global {
   }
 }
 
+let googleInitialized = false;
+
 export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButtonProps) {
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [buttonReady, setButtonReady] = useState(false);
-  const initialized = useRef(false);
 
   const handleCredentialResponse = async (response: { credential?: string }) => {
     if (!response.credential) {
@@ -48,9 +49,9 @@ export function GoogleLoginButton({ mode = 'login', onError }: GoogleLoginButton
 
   const initAndRender = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || !window.google || initialized.current) return;
+    if (!clientId || !window.google || googleInitialized) return;
 
-    initialized.current = true;
+    googleInitialized = true;
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: handleCredentialResponse,

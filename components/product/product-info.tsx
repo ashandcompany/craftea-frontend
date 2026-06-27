@@ -181,12 +181,19 @@ export function ProductInfo({
         </div>
       )}
 
+      {/* Out-of-stock banner */}
+      {product.is_active && effectiveStock === 0 && (allVariantsSelected || !hasVariants) && (
+        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-medium">
+          Rupture de stock — cet article n&apos;est plus disponible à la commande.
+        </div>
+      )}
+
       {/* Details grid */}
       <div className="grid grid-cols-2 gap-4 border-t border-stone-200 pt-4">
         <div>
           <p className="text-xs uppercase tracking-wider text-stone-400">stock</p>
-          <p className="text-sm text-stone-700">
-            {product.stock} unité{product.stock > 1 ? "s" : ""}
+          <p className={`text-sm font-medium ${product.stock === 0 ? "text-red-600" : "text-stone-700"}`}>
+            {product.stock === 0 ? "épuisé" : `${product.stock} unité${product.stock > 1 ? "s" : ""}`}
           </p>
         </div>
         {(product.processing_time_min || product.processing_time_max) && (
@@ -283,19 +290,26 @@ export function ProductInfo({
       )}
 
       {/* Add to cart */}
-      {user && product.is_active && (effectiveStock > 0 || (hasVariants && !allVariantsSelected)) && (
+      {user && product.is_active && (
         <div className="space-y-3 border-t border-stone-200 pt-4">
           <p className="text-xs uppercase tracking-wider text-stone-400">ajouter au panier</p>
-          {hasVariants && !allVariantsSelected && (
+          {hasVariants && !allVariantsSelected && effectiveStock > 0 && (
             <p className="text-xs italic text-stone-400">— sélectionnez toutes les options</p>
           )}
-          {inCart > 0 && allVariantsSelected && (
+          {inCart > 0 && allVariantsSelected && effectiveStock > 0 && (
             <p className="text-xs text-stone-500">
               déjà {inCart} dans le panier ·{" "}
               {maxQty > 0 ? `${maxQty} restant${maxQty > 1 ? "s" : ""}` : "stock atteint"}
             </p>
           )}
-          {maxQty > 0 && allVariantsSelected ? (
+          {effectiveStock === 0 && (allVariantsSelected || !hasVariants) ? (
+            <button
+              disabled
+              className="w-full border-2 border-stone-200 bg-stone-100 px-4 py-3 text-sm text-stone-400 cursor-not-allowed"
+            >
+              épuisé
+            </button>
+          ) : maxQty > 0 && allVariantsSelected ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center border border-stone-200">
                 <button

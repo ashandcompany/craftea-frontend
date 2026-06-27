@@ -38,7 +38,9 @@ import { SuccessScreen, ErrorScreen } from "./checkout-screens";
 
 // ── Stripe publishable key ────────────────────────────────────────────────────
 const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
+// advancedFraudSignals: false — Firefox ETP blocks r.stripe.com (fraud signals),
+// causing confirmCardPayment to hang waiting for a response that never comes.
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK, { advancedFraudSignals: false }) : null;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = "form" | "processing" | "success" | "error";
@@ -365,23 +367,16 @@ function CheckoutContent() {
         if (!err.retryable) setStep("error");
     }, []);
 
-    const elementsOptions = useMemo(
-        () =>
-            clientSecret
-                ? {
-                    clientSecret,
-                    appearance: {
-                        theme: "stripe" as const,
-                        variables: {
-                            colorPrimary: "#6b7c6e",
-                            fontFamily: "ui-monospace, monospace",
-                            borderRadius: "0px",
-                        },
-                    },
-                }
-                : null,
-        [clientSecret],
-    );
+    const elementsOptions = useMemo(() => ({
+        appearance: {
+            theme: "stripe" as const,
+            variables: {
+                colorPrimary: "#6b7c6e",
+                fontFamily: "ui-monospace, monospace",
+                borderRadius: "0px",
+            },
+        },
+    }), []);
 
     const loading = authLoading || cartLoading || loadingProducts;
 
@@ -547,8 +542,8 @@ function CheckoutContent() {
                         </form>
                     )}
 
-                    {/* ── Step 2: Stripe Payment Element ── */}
-                    {clientSecret && stripePromise && elementsOptions && (
+                    {/* ── Step 2: Stripe Card Element ── */}
+                    {clientSecret && stripePromise && (
                         <div className="space-y-6">
                             {/* Retryable error */}
                             {paymentError && paymentError.retryable && (
@@ -582,6 +577,7 @@ function CheckoutContent() {
                                 <PaymentForm
                                     total={grandTotal}
                                     orderId={orderId!}
+                                    clientSecret={clientSecret}
                                     paymentIntentId={paymentIntentId!}
                                     onSuccess={handlePaymentSuccess}
                                     onError={handlePaymentError}

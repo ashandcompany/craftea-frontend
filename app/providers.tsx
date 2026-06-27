@@ -49,7 +49,7 @@ function CookieConsentWrapper({ children }: { children: ReactNode }) {
       showManageButton
       enableFloatingButton
       privacyPolicyUrl="/terms"
-      cookieCategories={{ Analytics: true, Social: false, Advertising: false }}
+      cookieCategories={{ Analytics: true }}
       expirationDays={365}
     >
       <UmamiAnalytics />

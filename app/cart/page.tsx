@@ -639,6 +639,16 @@ export default function CartPage() {
 
   const grandTotal = subtotal + totalShipping;
 
+  const outOfStockItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const stock = getItemOptionStock(productMap[item.product_id], item.selected_options);
+        return stock === 0;
+      }),
+    [items, productMap],
+  );
+  const hasOutOfStock = outOfStockItems.length > 0;
+
   const cartProductIds = useMemo(() => items.map((i) => i.product_id), [items]);
   const categoryIds = useMemo(() => {
     const ids = [
@@ -945,8 +955,18 @@ export default function CartPage() {
                   </div>
                 )}
 
+                {/* Out-of-stock warning */}
+                {hasOutOfStock && (
+                  <div className="mt-4 border border-red-200 bg-red-50 p-3 text-xs text-red-700 space-y-1">
+                    <p className="font-medium flex items-center gap-1">⚠ Article(s) épuisé(s)</p>
+                    <p>
+                      Retirez les articles en rupture de stock pour continuer.
+                    </p>
+                  </div>
+                )}
+
                 {/* Checkout tout le panier */}
-                {hasUnavailableShipping ? (
+                {hasUnavailableShipping || hasOutOfStock ? (
                   <button
                     disabled
                     className="mt-6 w-full flex items-center justify-center gap-2 border-2 border-stone-300 bg-stone-200 px-6 py-3 text-sm text-stone-400 cursor-not-allowed"
@@ -992,7 +1012,8 @@ export default function CartPage() {
                         zone,
                       );
                       const isUnavailable = shopShip === null;
-                      return isUnavailable ? (
+                      const shopHasOutOfStock = shopItems.some((i) => getItemOptionStock(productMap[i.product_id], i.selected_options) === 0);
+                      return isUnavailable || shopHasOutOfStock ? (
                         <button
                           key={shopId}
                           disabled
@@ -1002,7 +1023,7 @@ export default function CartPage() {
                             <Store size={12} />
                             {shopMap[shopId]?.name || `Boutique #${shopId}`}
                           </span>
-                          <span className="font-medium">indisponible</span>
+                          <span className="font-medium">{shopHasOutOfStock ? "rupture" : "indisponible"}</span>
                         </button>
                       ) : (
                         <Link
